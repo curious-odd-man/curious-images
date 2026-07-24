@@ -64,9 +64,9 @@ public class PhotoRotationService {
     public static final int ROTATE_CCW = -90;
     public static final int ROTATE_180 = 180;
 
-    private final DSLContext      dsl;
-    private final MediaRepository photoRepo;
-    private final FaceRepository  faceRepo;
+    private final DSLContext              dsl;
+    private final MediaRepository         photoRepo;
+    private final FaceRepository          faceRepo;
     private final FaceEmbeddingRepository faceEmbeddingRepo;
     private final ClipEmbeddingRepository clipEmbeddingRepo;
     private final PersonCorrectionService personCorrectionService;
@@ -82,8 +82,8 @@ public class PhotoRotationService {
      *                     these three
      */
     public void rotateAndClearAiResults(long mediaId, int deltaDegrees) {
-        MediaPhotoRecord photo = photoRepo.findById(mediaId)
-                                     .orElse(null);
+        MediaPhotoRecord photo = photoRepo.findPhotoById(mediaId)
+                                          .orElse(null);
         if (photo == null) {
             log.warn("rotate: media {} no longer exists", mediaId);
             return;

@@ -37,14 +37,16 @@ public class MediaHashRepository {
                   .collect(Collectors.toMap(MediaHashRecord::getMediaId, r -> r));
     }
 
-    public Query upsertQuery(long photoId, String pixelHash, long hashedFileSize, LocalDateTime now) {
+    public Query upsertQuery(long photoId, String hashType, String contentHash, long hashedFileSize, LocalDateTime now) {
         return dsl.insertInto(MEDIA_HASH)
                   .set(MEDIA_HASH.MEDIA_ID, photoId)
-                  .set(MEDIA_HASH.CONTENT_HASH, pixelHash)
+                  .set(MEDIA_HASH.HASH_TYPE, hashType)
+                  .set(MEDIA_HASH.CONTENT_HASH, contentHash)
                   .set(MEDIA_HASH.HASHED_FILE_SIZE, hashedFileSize)
                   .set(MEDIA_HASH.HASHED_AT, now)
                   .onDuplicateKeyUpdate()
-                  .set(MEDIA_HASH.CONTENT_HASH, pixelHash)
+                  .set(MEDIA_HASH.HASH_TYPE, hashType)
+                  .set(MEDIA_HASH.CONTENT_HASH, contentHash)
                   .set(MEDIA_HASH.HASHED_FILE_SIZE, hashedFileSize)
                   .set(MEDIA_HASH.HASHED_AT, now);
     }

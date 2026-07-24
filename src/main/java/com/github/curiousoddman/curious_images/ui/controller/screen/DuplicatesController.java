@@ -1,6 +1,5 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ThumbnailRecord;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailUtils;
 import com.github.curiousoddman.curious_images.domain.dedupe.DuplicateResolutionService;
@@ -343,17 +342,16 @@ public class DuplicatesController implements Initializable {
     }
 
     private void resolveActivePane(DupResolveStrategy strategy) {
-        List<MediaPhotoRecord> toDrop       = new ArrayList<>();
-        DuplicateGroup         currentGroup = knownGroups.get(currentGroupIndex);
+        List<Media>    toDrop       = new ArrayList<>();
+        DuplicateGroup currentGroup = knownGroups.get(currentGroupIndex);
         for (MediaWithThumbnail mediaWithThumbnail : currentGroup.photos()) {
-            MediaPhotoRecord MediaPhotoRecord = mediaWithThumbnail.media()
-                                                                  .photo();
-            DuplicateCellController duplicateCellController = visiblePhotoCells.get(MediaPhotoRecord.getId());
+            Media                   media                   = mediaWithThumbnail.media();
+            DuplicateCellController duplicateCellController = visiblePhotoCells.get(media.getId());
             boolean currentImageSelected = duplicateCellController.checkBox()
                                                                   .isSelected();
 
             if (isDropped(strategy, currentImageSelected)) {
-                toDrop.add(MediaPhotoRecord);
+                toDrop.add(media);
             }
         }
 

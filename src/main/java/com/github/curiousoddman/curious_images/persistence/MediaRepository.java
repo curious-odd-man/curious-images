@@ -86,8 +86,10 @@ public class MediaRepository {
                 .fetch();
 
         return Stream.concat(
-                             photo.stream().map(Media::photo),
-                             video.stream().map(Media::video))
+                             photo.stream()
+                                  .map(Media::photo),
+                             video.stream()
+                                  .map(Media::video))
                      .sorted(Comparator.comparing(Media::getFilename, Comparator.nullsLast(Comparator.naturalOrder())))
                      .toList();
     }
@@ -135,10 +137,10 @@ public class MediaRepository {
      * through a separate path not yet exercised for the video branch.
      */
     public long insertVideo(long folderId, String absolutePath, String filename, String extension,
-                           long fileSize, Integer width, Integer height,
-                           LocalDateTime captureDate, CaptureDateSource captureDateSource,
-                           Long durationMs, String codec, Double frameRate, int rotationDegrees,
-                           Double gpsLat, Double gpsLon, Double gpsAltitude, LocalDateTime now) {
+                            long fileSize, Integer width, Integer height,
+                            LocalDateTime captureDate, CaptureDateSource captureDateSource,
+                            Long durationMs, String codec, Double frameRate, int rotationDegrees,
+                            Double gpsLat, Double gpsLon, Double gpsAltitude, LocalDateTime now) {
         return dsl.transactionResult(conf -> {
             DSLContext tx = DSL.using(conf);
             Long id = tx.insertInto(MEDIA)
@@ -332,6 +334,13 @@ public class MediaRepository {
                      .toList();
     }
 
+    public Optional<MediaPhotoRecord> findPhotoById(long mediaId) {
+        return Optional.ofNullable(
+                selectPhotoMedia()
+                        .where(MEDIA_PHOTO.ID.eq(mediaId))
+                        .fetchOne());
+    }
+
     public List<MediaPhotoRecord> findByNullCaptureDate() {
         return selectPhotoMedia()
                 .where(MEDIA_PHOTO.CAPTURE_DATE.isNull())
@@ -339,26 +348,6 @@ public class MediaRepository {
                 .fetchInto(MediaPhotoRecord.class);
     }
 
-    public Optional<MediaPhotoRecord> findById(long mediaId) {
-        return Optional.ofNullable(
-                selectPhotoMedia()
-                        .where(MEDIA_PHOTO.ID.eq(mediaId))
-                        .fetchOne());
-    }
-
-    public List<MediaPhotoRecord> findByIdIn(Collection<Long> ids) {
-        return selectPhotoMedia()
-                .where(MEDIA_PHOTO.ID.in(ids))
-                .fetch()
-                .stream()
-                .toList();
-    }
-
-    /**
-     * Mixed photo+video lookup by id — used by {@code ThumbnailGenerationJob}, which now
-     * generates thumbnails for whichever media type the grid actually asked for (see
-     * implementation plan §3).
-     */
     public List<Media> findMediaByIdIn(Collection<Long> ids) {
         if (ids.isEmpty()) {
             return List.of();
@@ -370,9 +359,12 @@ public class MediaRepository {
                 .where(MEDIA_VIDEO.ID.in(ids))
                 .fetch();
         return Stream.concat(
-                photo.stream().map(Media::photo),
-                video.stream().map(Media::video)
-        ).toList();
+                             photo.stream()
+                                  .map(Media::photo),
+                             video.stream()
+                                  .map(Media::video)
+                     )
+                     .toList();
     }
 
     public Query markFaceDetectAndEmbedDoneQuery(long mediaId, LocalDateTime now) {

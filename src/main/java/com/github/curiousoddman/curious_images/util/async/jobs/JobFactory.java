@@ -17,6 +17,7 @@ import com.github.curiousoddman.curious_images.domain.common.thumbnail.Thumbnail
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.VideoThumbnailGenerator;
 import com.github.curiousoddman.curious_images.domain.dedupe.DuplicateDetectionJob;
 import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
+import com.github.curiousoddman.curious_images.domain.dedupe.hasher.FileHasher;
 import com.github.curiousoddman.curious_images.domain.dedupe.hasher.PixelHasher;
 import com.github.curiousoddman.curious_images.domain.imports.AddFilesJob;
 import com.github.curiousoddman.curious_images.domain.imports.ImportJob;
@@ -68,6 +69,7 @@ public class JobFactory {
     private final DuplicateJobRepository   duplicateJobRepository;
     private final DuplicateGroupRepository duplicateGroupRepository;
     private final PixelHasher              pixelHasher;
+    private final FileHasher               fileHasher;
 
     private final FaceRepository           faceRepository;
     private final FaceEmbeddingRepository  faceEmbeddingRepository;
@@ -128,6 +130,7 @@ public class JobFactory {
                 duplicateJobRepository,
                 duplicateGroupRepository,
                 pixelHasher,
+                fileHasher,
                 timeProvider,
                 aiConfig.getDuplicateDetectionThreadCount()
         );

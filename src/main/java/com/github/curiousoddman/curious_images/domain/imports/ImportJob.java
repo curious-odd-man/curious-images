@@ -1,6 +1,6 @@
 package com.github.curiousoddman.curious_images.domain.imports;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
+import com.github.curiousoddman.curious_images.domain.common.MediaExtensions;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.ExtractedMetadata;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.ExtractedVideoMetadata;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.PhotoMetadataExtractor;
@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,14 +39,13 @@ public class ImportJob extends BackgroundJob {
 
     public static final String IMPORT_SCAN = "Import Scan";
 
-    private static final Set<String> IMAGE_EXTENSIONS         = Set.of("jpg", "jpeg", "png", "cr2");
     /**
      * MP4/MOV/M4V containers only — codec is validated per-file at import time (H.264 video +
      * AAC audio only, see implementation plan "Accepted formats" decision); a container with
      * these extensions but a different codec is discovered and rejected in {@link #importOneVideo}.
      */
-    private static final Set<String> VIDEO_EXTENSIONS         = Set.of("mp4", "mov", "m4v");
-    private static final Set<String> SUPPORTED_EXTENSIONS     = union(IMAGE_EXTENSIONS, VIDEO_EXTENSIONS);
+    private static final Set<String> VIDEO_EXTENSIONS         = MediaExtensions.VIDEO_EXTENSIONS;
+    private static final Set<String> SUPPORTED_EXTENSIONS     = MediaExtensions.SUPPORTED_EXTENSIONS;
     private static final int         DB_FLUSH_BATCH_SIZE      = 200;
     private static final int         APPROXIMATE_LIBRARY_SIZE = 25_000;
 

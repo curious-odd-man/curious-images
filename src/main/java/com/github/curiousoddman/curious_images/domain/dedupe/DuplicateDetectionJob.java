@@ -1,6 +1,8 @@
 package com.github.curiousoddman.curious_images.domain.dedupe;
 
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaHashRecord;
+import com.github.curiousoddman.curious_images.domain.common.MediaExtensions;
+import com.github.curiousoddman.curious_images.domain.dedupe.hasher.FileHasher;
 import com.github.curiousoddman.curious_images.domain.dedupe.hasher.PixelHasher;
 import com.github.curiousoddman.curious_images.persistence.DuplicateGroupRepository;
 import com.github.curiousoddman.curious_images.persistence.DuplicateJobRepository;
@@ -30,18 +32,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Duplicate detection: a separate, user-triggered background job (never run as part of import).
  * <p>
- * Two images are duplicates when their decoded pixel content is identical AND they share the
- * same file extension — comparison never crosses file types, per the product spec ("JPEG and CR3
- * with same image -> not duplicate").
+ * Two photos are duplicates when their decoded pixel content is identical AND they share the same
+ * file extension; two videos are duplicates when their raw file bytes are identical (exact-match
+ * only — no perceptual/frame hashing for v1) AND they share the same file extension. Comparison
+ * never crosses file types OR hash types (photos vs. videos always hash differently — see
+ * {@link HashType} — and are never compared against each other even if hex strings collided), per
+ * the product spec and implementation plan §6.
  * <p>
- * Resumability: each media's hash is cached in PHOTO_HASH alongside the file size it was computed
- * from. A rerun only (re)hashes photos whose current file size doesn't match what's cached —
+ * Resumability: each media's hash is cached in MEDIA_HASH alongside the file size it was computed
+ * from. A rerun only (re)hashes media whose current file size doesn't match what's cached —
  * everything else is reused for free. This means an interrupted run isn't wasted work: whatever
  * was hashed before the interrupt stays cached for next time.
  * <p>
  * Hashing is parallelized across a configurable fixed pool of plain platform threads
- * ({@code app.duplicate-detection.thread-count}, default 4) — not virtual threads, since the work
- * is CPU-bound image decoding, not I/O-bound waiting.
+ * ({@code app.duplicate-detection.thread-count}, default 4). Photo hashing is CPU-bound (decode +
+ * digest); video hashing is I/O-bound streaming digest of the raw bytes — both share the same
+ * pool, since neither dominates enough to warrant separate pools for v1.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -49,12 +55,13 @@ public class DuplicateDetectionJob extends BackgroundJob {
     public static final String        DUPLICATE_DETECTION = "Duplicate Detection";
     public static final AtomicInteger THREAD_COUNTER      = new AtomicInteger();
 
-    private final DSLContext          dsl;
-    private final MediaRepository     mediaRepository;
-    private final MediaHashRepository photoHashRepository;
+    private final DSLContext               dsl;
+    private final MediaRepository          mediaRepository;
+    private final MediaHashRepository      photoHashRepository;
     private final DuplicateJobRepository   duplicateJobRepository;
     private final DuplicateGroupRepository duplicateGroupRepository;
     private final PixelHasher              pixelHasher;
+    private final FileHasher               fileHasher;
     private final TimeProvider             timeProvider;
     private final int                      threadCount;
 
@@ -74,7 +81,10 @@ public class DuplicateDetectionJob extends BackgroundJob {
             for (MediaForHashing photo : photos) {
                 MediaHashRecord cached = existingHashes.get(photo.id());
                 if (cached != null && cached.getHashedFileSize() == photo.fileSize()) {
-                    hashByPhoto.put(photo.id(), new HashEntry(photo.extension(), cached.getContentHash()));
+                    HashType hashType = cached.getHashType() != null
+                            ? HashType.valueOf(cached.getHashType())
+                            : hashTypeFor(photo.extension());
+                    hashByPhoto.put(photo.id(), new HashEntry(photo.extension(), hashType, cached.getContentHash()));
                 } else {
                     needsHashing.add(photo);
                 }
@@ -129,11 +139,10 @@ public class DuplicateDetectionJob extends BackgroundJob {
             t.setDaemon(true);
             return t;
         })) {
-            CompletionService<PixelHasher.MediaHashResult> completionService = new ExecutorCompletionService<>(executor);
+            CompletionService<HashOutcome> completionService = new ExecutorCompletionService<>(executor);
 
             for (MediaForHashing photo : needsHashing) {
-                completionService.submit(() ->
-                        pixelHasher.hash(photo.id(), Path.of(photo.absolutePath()), photo.extension(), photo.fileSize()));
+                completionService.submit(() -> hashOne(photo));
             }
 
             try (QueryBuffer buffer = new QueryBuffer(dsl)) {
@@ -143,7 +152,7 @@ public class DuplicateDetectionJob extends BackgroundJob {
                         return true;
                     }
 
-                    PixelHasher.MediaHashResult result;
+                    HashOutcome result;
                     try {
                         result = completionService.take()
                                                   .get();
@@ -158,12 +167,16 @@ public class DuplicateDetectionJob extends BackgroundJob {
                         continue;
                     }
 
-                    if (result.pixelHash() != null) {
-                        hashByPhoto.put(result.photoId(), new HashEntry(result.extension(), result.pixelHash()));
-                        buffer.add(photoHashRepository.upsertQuery(result.photoId(), result.pixelHash(), result.fileSize(), now));
+                    if (result.hash() != null) {
+                        hashByPhoto.put(result.mediaId(), new HashEntry(result.extension(), result.hashType(), result.hash()));
+                        buffer.add(photoHashRepository.upsertQuery(
+                                result.mediaId(), result.hashType()
+                                                        .name(),
+                                result.hash(), result.fileSize(), now));
                     }
-                    // else: undecodable file (corrupt / CR2 with no usable preview) — skip silently,
-                    // same "don't fail the whole job over one bad file" policy as ImportService.
+                    // else: undecodable/unreadable file (corrupt photo, CR2 with no usable
+                    // preview, or an I/O error reading a video) — skip silently, same "don't fail
+                    // the whole job over one bad file" policy as ImportService.
 
                     int done = processed.incrementAndGet();
                     publishProgressThrottled("Hashing photos", done, totalPhotos, result.absolutePath(), done == totalPhotos);
@@ -173,12 +186,36 @@ public class DuplicateDetectionJob extends BackgroundJob {
         }
     }
 
+    /**
+     * Dispatches to the right hasher for this media's type (see implementation plan §6): decoded
+     * pixel bytes for photos, raw file bytes for videos. The two are never comparable, so the
+     * result always carries which one produced it.
+     */
+    private HashOutcome hashOne(MediaForHashing photo) {
+        Path file = Path.of(photo.absolutePath());
+        if (MediaExtensions.isVideo(photo.extension())) {
+            FileHasher.MediaHashResult result = fileHasher.hash(photo.id(), file, photo.extension(), photo.fileSize());
+            return new HashOutcome(photo.id(), result.extension(), result.fileSize(), result.absolutePath(),
+                    HashType.FILE, result.fileHash());
+        }
+        PixelHasher.MediaHashResult result = pixelHasher.hash(photo.id(), file, photo.extension(), photo.fileSize());
+        return new HashOutcome(photo.id(), result.extension(), result.fileSize(), result.absolutePath(),
+                HashType.PIXEL, result.pixelHash());
+    }
+
+    private static HashType hashTypeFor(String extension) {
+        return MediaExtensions.isVideo(extension) ? HashType.FILE : HashType.PIXEL;
+    }
+
     private Map<GroupKey, List<Long>> groupDuplicates(Map<Long, HashEntry> hashByPhoto) {
         Map<GroupKey, List<Long>> groups = new HashMap<>();
         for (Map.Entry<Long, HashEntry> entry : hashByPhoto.entrySet()) {
-            GroupKey key = new GroupKey(entry.getValue()
-                                             .extension(), entry.getValue()
-                                                                .pixelHash());
+            HashEntry hashEntry = entry.getValue();
+            // Grouping key includes hashType as an explicit safety rule (implementation plan
+            // §6): PIXEL and FILE hashes must never be compared, even though in practice photo
+            // and video extensions never overlap, so this never actually changes which groups
+            // form today — it just guarantees a future extension overlap can't silently cross-match.
+            GroupKey key = new GroupKey(hashEntry.hashType(), hashEntry.extension(), hashEntry.hash());
             groups.computeIfAbsent(key, _ -> new ArrayList<>())
                   .add(entry.getKey());
         }
@@ -200,7 +237,7 @@ public class DuplicateDetectionJob extends BackgroundJob {
                 long groupId = duplicateGroupRepository.insertGroup(
                         ctx, jobId, entry.getKey()
                                          .extension(), entry.getKey()
-                                                            .pixelHash(), now);
+                                                            .hash(), now);
                 duplicateGroupRepository.insertMembers(ctx, groupId, entry.getValue());
                 count++;
             }
@@ -214,9 +251,13 @@ public class DuplicateDetectionJob extends BackgroundJob {
         return DUPLICATE_DETECTION;
     }
 
-    private record GroupKey(String extension, String pixelHash) {
+    private record GroupKey(HashType hashType, String extension, String hash) {
     }
 
-    private record HashEntry(String extension, String pixelHash) {
+    private record HashEntry(String extension, HashType hashType, String hash) {
+    }
+
+    private record HashOutcome(long mediaId, String extension, long fileSize, String absolutePath,
+                               HashType hashType, String hash) {
     }
 }

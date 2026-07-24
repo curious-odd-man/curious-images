@@ -7,7 +7,7 @@
 | 1. Schema migration + jOOQ regen + app compiles/runs (photos-only behavior unchanged) | 🟢 Completed  |
 | 2. Video import + browse (extension filtering, metadata, thumbnails, plain grid)      | 🟢 Completed  |
 | 3. Hover-preview playback                                                             | 🟢 Completed  |
-| 4. Duplicate detection (file-hash, `media_hash`)                                      | ⬜ Not started |
+| 4. Duplicate detection (file-hash, `media_hash`)                                      | 🟢 Completed  |
 | 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | ⬜ Not started |
 | 6. Albums + unified search, `MediaItem` abstraction                                   | ⬜ Not started |
 
@@ -51,6 +51,23 @@
 - Defensive fix in `SlideshowController`: EXIF-rotation lookup (`media.photo().getOrientation()`)
   is now guarded by `media.isPhoto()`, since arrow-key navigation inside an already-open slideshow
   could in principle land on a video item (its generated thumbnail frame is shown; no crash).
+
+## Phase 4 — what landed
+
+- New `FileHasher` (SHA-256, streamed) alongside the existing `PixelHasher` — a small shared
+  `MediaExtensions` util (also now used by `ImportJob`, fixing a latent bug where `ImportJob`
+  referenced an undefined `union()` helper) decides which hasher a given extension needs.
+- `HashType` enum (`PIXEL`/`FILE`) threads through `MediaHashRepository.upsertQuery`,
+  `DuplicateDetectionJob`'s grouping key, and the cached-hash reuse path — groups are now scoped
+  within the same hash type as an explicit safety rule, not just an accident of disjoint
+  extensions.
+- `DuplicateDetectionJob` branches per-file: photos hash via decoded pixels (unchanged), videos
+  hash via raw file bytes; both share the same cache/resume/threading machinery.
+- `DuplicateResolutionService` (and `PhotoFailure`) generalized from `MediaPhotoRecord` to `Media`
+  — trash-then-delete only ever needed id/absolute path, so this now actually works for duplicate
+  video groups instead of crashing.
+- Fixed two more unconditional `.photo()` casts that duplicate video groups would have hit:
+  `DuplicatesController.resolveActivePane` and `FolderDuplicatesController.createPhotoTile`.
 
 ## Open items still worth a decision before/while coding
 

@@ -242,7 +242,7 @@ public class AiPipelineJob extends BackgroundJob {
         Mat              img           = null;
         MediaPhotoRecord photo         = null;
         try {
-            photo = photoRepo.findById(photoId)
+            photo = photoRepo.findPhotoById(photoId)
                              .orElseThrow(() -> new IllegalStateException("Photo not found: " + photoId));
             lastPhotoPath = photo.getAbsolutePath();
             img = imageUtils.imageOrCr2Preview(photo)

@@ -1,6 +1,5 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ThumbnailRecord;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailUtils;
 import com.github.curiousoddman.curious_images.domain.dedupe.DuplicateResolutionService;
@@ -270,9 +269,8 @@ public class FolderDuplicatesController implements Initializable {
     }
 
     private Node createPhotoTile(MediaWithThumbnail pwt, List<Media> orderedFolderPhotos, int index) {
-        MediaPhotoRecord photo     = pwt.media()
-                                        .photo();
-        ImageView        imageView = new ImageView(getImage(pwt.thumbnail(), null));
+        Media     photo     = pwt.media();
+        ImageView imageView = new ImageView(getImage(pwt.thumbnail(), null));
         imageView.setFitWidth(TILE_SIZE);
         imageView.setFitHeight(TILE_SIZE);
         imageView.setPreserveRatio(true);
