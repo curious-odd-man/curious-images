@@ -46,6 +46,7 @@ public class PhotoRowCell extends ListCell<PhotoGridRow> {
 
             if (empty || item == null) {
                 setGraphic(null);
+                rowController.showRow(List.of());
                 return;
             }
 

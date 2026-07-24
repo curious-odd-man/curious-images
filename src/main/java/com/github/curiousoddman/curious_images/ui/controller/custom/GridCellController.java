@@ -17,6 +17,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 import lombok.Getter;
@@ -27,6 +29,7 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Comparator;
 import java.util.ResourceBundle;
@@ -71,6 +74,8 @@ public class GridCellController implements Initializable {
     @FXML
     private FontIcon   videoPlayOverlay;
     @FXML
+    private MediaView  hoverMediaView;
+    @FXML
     private StackPane  imageSlot;
     @FXML
     private Rectangle  placeholderRect;
@@ -89,6 +94,14 @@ public class GridCellController implements Initializable {
 
     private Tooltip cellTooltip;
 
+    /**
+     * The currently-playing hover-preview player, or {@code null} when nothing is playing. At
+     * most one exists per cell, and at most one cell is ever hovered at a time — this is what
+     * caps concurrent {@link MediaPlayer} instances to the currently-hovered cell (implementation
+     * plan §4): {@code MediaPlayer} is a real native resource, not free.
+     */
+    private MediaPlayer hoverPlayer;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         log.debug("Initialize");
@@ -99,6 +112,7 @@ public class GridCellController implements Initializable {
         Tooltip.install(imageView, cellTooltip);
         cellTooltip.setShowDelay(Duration.millis(500));
         imageView.setPreserveRatio(true);
+        hoverMediaView.setPreserveRatio(true);
 
         cellRoot.setOnContextMenuRequested(e -> gridContextMenu.show(gridCellData.media(), cellRoot, e));
         if (resources instanceof GridCellResources cellResources) {
@@ -122,10 +136,15 @@ public class GridCellController implements Initializable {
                  .bind(size);
         imageView.fitHeightProperty()
                  .bind(size);
+        hoverMediaView.fitWidthProperty()
+                      .bind(size);
+        hoverMediaView.fitHeightProperty()
+                      .bind(size);
     }
 
     public void showPlaceholder(GridCellData data) {
         log.debug("Placeholder.... {}", data.mediaId());
+        stopHoverPreview();
         this.gridCellData = data;
         fxManage(cellRoot, placeholderRect, placeholderLabel);
         fxUnmanage(imageView, iconsHbox, videoPlayOverlay);
@@ -135,6 +154,7 @@ public class GridCellController implements Initializable {
 
     public void showEmpty() {
         log.debug("Disappear {}", gridCellData == null ? null : gridCellData.mediaId());
+        stopHoverPreview();
         this.gridCellData = null;
         fxUnmanage(cellRoot, iconsHbox, videoPlayOverlay);
         imageView.setImage(null);
@@ -159,7 +179,8 @@ public class GridCellController implements Initializable {
 
         fxManage(imageView, iconsHbox);
         // Grid cell gets a small play-icon overlay to distinguish video tiles (implementation
-        // plan §3) — no hover-preview playback yet, this is browse-time only.
+        // plan §3); hover-preview playback (§4) temporarily swaps this out for hoverMediaView —
+        // see onCellHoverStart/stopHoverPreview.
         fxManage(data.isVideo(), videoPlayOverlay);
 
         fxManage(!data.tags()
@@ -204,6 +225,73 @@ public class GridCellController implements Initializable {
     private void onCellClicked(MouseEvent e) {
         if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY && gridCellData != null && onPhotoClicked != null) {
             onPhotoClicked.accept(gridCellData.media());
+        }
+    }
+
+    /**
+     * Hover-preview playback (implementation plan §4): plays the actual video file muted and
+     * looped, directly via JavaFX {@code MediaPlayer} — no proxy-transcode step, since accepted
+     * formats are restricted at import time to what JavaFX can already decode.
+     */
+    @FXML
+    private void onCellHoverStart(MouseEvent e) {
+        if (gridCellData != null && gridCellData.isVideo() && gridCellData.media()
+                                                                          .getAbsolutePath() != null) {
+            startHoverPreview();
+        }
+    }
+
+    @FXML
+    private void onCellHoverEnd(MouseEvent e) {
+        stopHoverPreview();
+    }
+
+    private void startHoverPreview() {
+        if (hoverPlayer != null) {
+            return; // already playing (e.g. duplicate enter event)
+        }
+        String absolutePath = gridCellData.media()
+                                          .getAbsolutePath();
+        try {
+            javafx.scene.media.Media media = new javafx.scene.media.Media(new File(absolutePath).toURI()
+                                                                                                .toString());
+            MediaPlayer player = new MediaPlayer(media);
+            player.setMute(true);
+            player.setCycleCount(MediaPlayer.INDEFINITE);
+            player.setOnError(() -> {
+                log.warn("Hover-preview playback failed for {}: {}", absolutePath, player.getError()
+                                                                                         .getMessage());
+                stopHoverPreview();
+            });
+            hoverMediaView.setMediaPlayer(player);
+            hoverPlayer = player;
+
+            fxManage(hoverMediaView);
+            fxUnmanage(imageView, videoPlayOverlay);
+            player.play();
+        } catch (Exception ex) {
+            log.warn("Could not start hover preview for {}", absolutePath, ex);
+        }
+    }
+
+    private void stopHoverPreview() {
+        if (hoverPlayer == null) {
+            return;
+        }
+        MediaPlayer player = hoverPlayer;
+        hoverPlayer = null;
+        hoverMediaView.setMediaPlayer(null);
+        try {
+            player.stop();
+            player.dispose();
+        } catch (Exception ex) {
+            log.debug("Error disposing hover-preview player", ex);
+        }
+
+        fxUnmanage(hoverMediaView);
+        if (gridCellData != null) {
+            fxManage(imageView);
+            fxManage(gridCellData.isVideo(), videoPlayOverlay);
         }
     }
 

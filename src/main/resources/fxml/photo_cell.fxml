@@ -4,13 +4,14 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.media.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 <?import org.kordamp.ikonli.javafx.*?>
 
 <BorderPane fx:id="cellRoot" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.curiousoddman.curious_images.ui.controller.custom.GridCellController">
     <center>
-        <StackPane fx:id="imageSlot" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onMouseClicked="#onCellClicked">
+        <StackPane fx:id="imageSlot" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onMouseClicked="#onCellClicked" onMouseEntered="#onCellHoverStart" onMouseExited="#onCellHoverEnd">
             <padding>
                 <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
             </padding>
@@ -22,6 +23,7 @@
                   <Font name="Consolas Bold" size="20.0" />
                </font></Label>
                 <ImageView fx:id="imageView" managed="false" preserveRatio="true" visible="false" />
+                <MediaView fx:id="hoverMediaView" managed="false" visible="false" />
                 <FontIcon fx:id="videoPlayOverlay" iconColor="WHITE" iconLiteral="bi-play-circle-fill" iconSize="28" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                     <StackPane.margin>
                         <Insets bottom="4.0" right="4.0" />

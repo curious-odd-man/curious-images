@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.awt.Desktop;
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.curiousoddman.curious_images.util.async.ThreadUtils.runOnDaemonThread;
 import static com.sun.javafx.util.Utils.runOnFxThread;
 
 @Slf4j
@@ -136,10 +139,46 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
 
     @Override
     public void onPhotoClicked(Media photo) {
+        if (photo.isVideo()) {
+            openInOsPlayer(photo);
+            return;
+        }
         Integer idx = photoGridModel.indexById(photo.getId());
         if (idx != null) {
             openSlideshow(photoGridModel.media(), idx);
         }
+    }
+
+    /**
+     * Full-screen playback for videos hands off to the OS's default video player rather than the
+     * in-app slideshow viewer (implementation plan §4) — no proxy-transcode step is needed here
+     * either, since accepted formats are restricted at import time to what a typical OS player
+     * handles natively (and then some).
+     */
+    private void openInOsPlayer(Media video) {
+        String absolutePath = video.getAbsolutePath();
+        if (absolutePath == null) {
+            log.warn("Cannot open video {} — no absolute path on record", video.getId());
+            return;
+        }
+        File file = new File(absolutePath);
+        if (!file.isFile()) {
+            log.warn("Cannot open video {} — file missing on disk: {}", video.getId(), absolutePath);
+            return;
+        }
+        runOnDaemonThread("OpenVideoExternally", () -> {
+            try {
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop()
+                                                            .isSupported(Desktop.Action.OPEN)) {
+                    Desktop.getDesktop()
+                           .open(file);
+                } else {
+                    log.warn("Desktop OPEN action not supported on this platform — cannot launch default player for {}", absolutePath);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to open {} in the OS default player", absolutePath, e);
+            }
+        });
     }
 
     @Override
