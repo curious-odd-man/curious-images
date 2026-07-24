@@ -2,14 +2,14 @@
 
 ## Status
 
-| Phase                                                                                 | Status           |
-|---------------------------------------------------------------------------------------|------------------|
-| 1. Schema migration + jOOQ regen + app compiles/runs (photos-only behavior unchanged) | 🟢 Completed~~~~ |
-| 2. Video import + browse (extension filtering, metadata, thumbnails, plain grid)      | ⬜ Not started    |
-| 3. Hover-preview playback                                                             | ⬜ Not started    |
-| 4. Duplicate detection (file-hash, `media_hash`)                                      | ⬜ Not started    |
-| 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | ⬜ Not started    |
-| 6. Albums + unified search, `MediaItem` abstraction                                   | ⬜ Not started    |
+| Phase                                                                                 | Status        |
+|---------------------------------------------------------------------------------------|---------------|
+| 1. Schema migration + jOOQ regen + app compiles/runs (photos-only behavior unchanged) | 🟢 Completed  |
+| 2. Video import + browse (extension filtering, metadata, thumbnails, plain grid)      | ⬜ Not started |
+| 3. Hover-preview playback                                                             | ⬜ Not started |
+| 4. Duplicate detection (file-hash, `media_hash`)                                      | ⬜ Not started |
+| 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | ⬜ Not started |
+| 6. Albums + unified search, `MediaItem` abstraction                                   | ⬜ Not started |
 
 ### Decisions
 

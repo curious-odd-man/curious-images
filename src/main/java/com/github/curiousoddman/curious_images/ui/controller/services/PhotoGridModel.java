@@ -24,8 +24,7 @@ public class PhotoGridModel {
 
     public void setCells(List<GridCellData> cells) {
         this.cells = List.copyOf(cells);
-        this.cellIndex = CollectionUtils.getIdToIndexMap(cells, r -> r.photo()
-                                                                      .getId());
+        this.cellIndex = CollectionUtils.getIdToIndexMap(cells, GridCellData::mediaId);
     }
 
     public void clear() {

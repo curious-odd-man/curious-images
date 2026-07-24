@@ -1,6 +1,5 @@
 package com.github.curiousoddman.curious_images.ui.controller.custom;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailUtils;
 import com.github.curiousoddman.curious_images.event.model.ThumbnailsReadyEvent;
 import com.github.curiousoddman.curious_images.model.GridCellData;
@@ -136,7 +135,7 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
     }
 
     @Override
-    public void onPhotoClicked(MediaPhotoRecord photo) {
+    public void onPhotoClicked(Media photo) {
         Integer idx = photoGridModel.indexById(photo.getId());
         if (idx != null) {
             openSlideshow(photoGridModel.media(), idx);

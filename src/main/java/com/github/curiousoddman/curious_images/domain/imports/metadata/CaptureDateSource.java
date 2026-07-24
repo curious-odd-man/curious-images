@@ -8,5 +8,6 @@ package com.github.curiousoddman.curious_images.domain.imports.metadata;
 public enum CaptureDateSource {
     EXIF_ORIGINAL,
     EXIF_DIGITIZED,
+    CONTAINER_METADATA,
     FILESYSTEM
 }

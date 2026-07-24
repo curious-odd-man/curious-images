@@ -22,6 +22,11 @@
                   <Font name="Consolas Bold" size="20.0" />
                </font></Label>
                 <ImageView fx:id="imageView" managed="false" preserveRatio="true" visible="false" />
+                <FontIcon fx:id="videoPlayOverlay" iconColor="WHITE" iconLiteral="bi-play-circle-fill" iconSize="28" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                    <StackPane.margin>
+                        <Insets bottom="4.0" right="4.0" />
+                    </StackPane.margin>
+                </FontIcon>
             </children>
         </StackPane>
     </center>

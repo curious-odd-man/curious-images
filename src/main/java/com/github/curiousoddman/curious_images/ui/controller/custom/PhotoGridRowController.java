@@ -1,8 +1,8 @@
 package com.github.curiousoddman.curious_images.ui.controller.custom;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
-import com.github.curiousoddman.curious_images.model.LoadedFxml;
 import com.github.curiousoddman.curious_images.model.GridCellData;
+import com.github.curiousoddman.curious_images.model.LoadedFxml;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
 import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -52,8 +53,8 @@ public class PhotoGridRowController implements Initializable {
     private final List<GridCellController> pool = new ArrayList<>();
 
     private ObservableValue<Number> thumbnailSize;
-    private Consumer<MediaPhotoRecord> onPhotoClicked;
-    private GridCellResources     gridCellResources;
+    private Consumer<Media>         onPhotoClicked;
+    private GridCellResources       gridCellResources;
 
     @Getter
     private long showToken;
@@ -67,7 +68,7 @@ public class PhotoGridRowController implements Initializable {
     }
 
     public void bindOnce(ObservableValue<Number> thumbnailSize,
-                         Consumer<MediaPhotoRecord> onPhotoClicked) {
+                         Consumer<Media> onPhotoClicked) {
         this.thumbnailSize = thumbnailSize;
         this.onPhotoClicked = onPhotoClicked;
     }
@@ -100,7 +101,8 @@ public class PhotoGridRowController implements Initializable {
      */
     public void applyImage(GridCellData photo) {
         for (GridCellController cell : pool) {
-            if (cell.getGridCellData().photo() == photo.photo()) {
+            GridCellData current = cell.getGridCellData();
+            if (current != null && Objects.equals(current.mediaId(), photo.mediaId())) {
                 cell.showImage(photo);
                 return;
             }

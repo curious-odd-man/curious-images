@@ -57,7 +57,7 @@ public class PhotoGridManager {
         this.gridController = gridController;
     }
 
-    public void populate(List<MediaPhotoRecord> photos) {
+    public void populate(List<Media> photos) {
         List<GridCellData> data = createData(photos);
         runOnFxThread(() -> gridController.populatePhotoGrid(data));
     }
@@ -70,7 +70,7 @@ public class PhotoGridManager {
     public void loadPhotosForFolder(long folderId) {
         long myGeneration = gridController.initiateChange();
         runOnDaemonThread("LoadFolder", () -> {
-            List<MediaPhotoRecord> photos = mediaRepository.findByFolderId(folderId);
+            List<Media> photos = mediaRepository.findMediaByFolderId(folderId);
             loadSelectionResult(myGeneration, photos);
         });
     }
@@ -79,9 +79,7 @@ public class PhotoGridManager {
         long myGeneration = gridController.initiateChange();
         runOnDaemonThread("LoadTimeline", () -> {
             List<Media> photos = mediaRepository.findByCaptureDate(year, month, day);
-            loadSelectionResult(myGeneration, photos.stream()
-                                                    .map(Media::photo)
-                                                    .toList());
+            loadSelectionResult(myGeneration, photos);
         });
     }
 
@@ -89,7 +87,9 @@ public class PhotoGridManager {
         long myGeneration = gridController.initiateChange();
         runOnDaemonThread("LoadUndated", () -> {
             List<MediaPhotoRecord> photos = mediaRepository.findByNullCaptureDate();
-            loadSelectionResult(myGeneration, photos);
+            loadSelectionResult(myGeneration, photos.stream()
+                                                    .map(Media::photo)
+                                                    .toList());
         });
     }
 
@@ -102,13 +102,15 @@ public class PhotoGridManager {
                                                                               .orElse(null))
                                                     .filter(Objects::nonNull)
                                                     .toList();
-            loadSelectionResult(myGeneration, photos);
+            loadSelectionResult(myGeneration, photos.stream()
+                                                    .map(Media::photo)
+                                                    .toList());
         });
     }
 
-    public List<GridCellData> createData(List<MediaPhotoRecord> photos) {
+    public List<GridCellData> createData(List<Media> photos) {
         List<Long> ids = photos.stream()
-                               .map(MediaPhotoRecord::getId)
+                               .map(Media::getId)
                                .toList();
 
         Map<Long, Map<MediaTagRecord, TagEmbeddingRecord>> tags       = photoTagRepository.findForPhotos(ids);
@@ -119,20 +121,20 @@ public class PhotoGridManager {
         List<Long> missing = new ArrayList<>();
         List<GridCellData> cellData = photos
                 .stream()
-                .map(mediaPhotoRecord -> {
-                    ThumbnailRecord thumbnail  = thumbs.get(mediaPhotoRecord.getId());
+                .map(media -> {
+                    ThumbnailRecord thumbnail  = thumbs.get(media.getId());
                     Image           thumbImage = null;
                     if (thumbnail != null && hasCachedFile(thumbnail)) {
                         thumbImage = ThumbnailUtils.loadThumbnailImage(thumbnail);
                     } else {
-                        missing.add(mediaPhotoRecord.getId());
+                        missing.add(media.getId());
                     }
                     return new GridCellData(
-                            Media.photo(mediaPhotoRecord),
+                            media,
                             thumbImage,
-                            tags.getOrDefault(mediaPhotoRecord.getId(), Map.of()),
-                            persons.getOrDefault(mediaPhotoRecord.getId(), List.of()),
-                            duplicates.getOrDefault(mediaPhotoRecord.getId(), 0) > 1
+                            tags.getOrDefault(media.getId(), Map.of()),
+                            persons.getOrDefault(media.getId(), List.of()),
+                            duplicates.getOrDefault(media.getId(), 0) > 1
 
                     );
                 })
@@ -157,7 +159,7 @@ public class PhotoGridManager {
         });
     }
 
-    private void loadSelectionResult(long myGeneration, List<MediaPhotoRecord> photos) {
+    private void loadSelectionResult(long myGeneration, List<Media> photos) {
         if (myGeneration == gridController.currentChange()) {
             populate(photos);
         }

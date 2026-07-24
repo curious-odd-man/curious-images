@@ -20,6 +20,7 @@ description = 'An images organizer app'
 
 def javafxVersion = '25.0.1'
 def ikonliVersion = '12.3.1'
+def javacvVersion = "1.5.10"
 // PostgreSQL compatibility mode lets us use BIGSERIAL, JSON, etc. in Flyway migrations
 // and keeps runtime behaviour consistent with the SQL as written.
 def h2PgUrl = 'jdbc:h2:file:~/cimages/fw-jooq;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DEFAULT_NULL_ORDERING=HIGH'
@@ -195,6 +196,9 @@ dependencies {
     implementation "org.openjfx:javafx-controls:${javafxVersion}"
     implementation "org.openjfx:javafx-fxml:${javafxVersion}"
     implementation "org.openjfx:javafx-media:${javafxVersion}"
+
+
+    implementation("org.bytedeco:javacv-platform:${javacvVersion}")
 
     implementation "org.kordamp.ikonli:ikonli-javafx:${ikonliVersion}"
     implementation "org.kordamp.ikonli:ikonli-materialdesign2-pack:${ikonliVersion}"

@@ -32,6 +32,7 @@ import static com.github.curiousoddman.curious_images.dbobj.Tables.MEDIA;
 import static com.github.curiousoddman.curious_images.dbobj.Tables.MEDIA_PHOTO;
 import static com.github.curiousoddman.curious_images.dbobj.Tables.MEDIA_VIDEO;
 import static com.github.curiousoddman.curious_images.dbobj.Tables.PHOTO;
+import static com.github.curiousoddman.curious_images.dbobj.Tables.VIDEO;
 
 @Repository
 @RequiredArgsConstructor
@@ -45,6 +46,23 @@ public class MediaRepository {
                 .fetchOptional();
     }
 
+    /**
+     * Minimal, type-agnostic lookup used by {@code ImportJob}'s "cheap rescan: file unchanged"
+     * check — that decision only ever needs the media id and file size, regardless of whether the
+     * path turns out to be a photo or a video, so this queries {@code MEDIA} directly rather than
+     * either subtype view.
+     */
+    public Optional<ExistingMediaSummary> findExistingMediaSummaryByAbsolutePath(String absolutePath) {
+        return dsl.select(MEDIA.ID, MEDIA.FILE_SIZE, MEDIA.MEDIA_TYPE)
+                  .from(MEDIA)
+                  .where(MEDIA.ABSOLUTE_PATH.eq(absolutePath))
+                  .fetchOptional(r -> new ExistingMediaSummary(
+                          r.get(MEDIA.ID), r.get(MEDIA.FILE_SIZE), r.get(MEDIA.MEDIA_TYPE)));
+    }
+
+    public record ExistingMediaSummary(long id, long fileSize, MediaType mediaType) {
+    }
+
     public List<MediaPhotoRecord> findByFolderId(long folderId) {
         return selectPhotoMedia()
                 .where(MEDIA_PHOTO.FOLDER_ID.eq(folderId))
@@ -52,6 +70,26 @@ public class MediaRepository {
                 .fetch()
                 .stream()
                 .toList();
+    }
+
+    /**
+     * Mixed photo+video lookup for a folder — used by the grid/browse UI (see implementation plan
+     * §2), which shows videos alongside photos in a plain grid. Sorted by filename, merging both
+     * subtypes the same way {@link #findByCaptureDate} does for the timeline view.
+     */
+    public List<Media> findMediaByFolderId(long folderId) {
+        Result<MediaPhotoRecord> photo = selectPhotoMedia()
+                .where(MEDIA_PHOTO.FOLDER_ID.eq(folderId))
+                .fetch();
+        Result<MediaVideoRecord> video = selectVideoMedia()
+                .where(MEDIA_VIDEO.FOLDER_ID.eq(folderId))
+                .fetch();
+
+        return Stream.concat(
+                             photo.stream().map(Media::photo),
+                             video.stream().map(Media::video))
+                     .sorted(Comparator.comparing(Media::getFilename, Comparator.nullsLast(Comparator.naturalOrder())))
+                     .toList();
     }
 
     public long insertPhoto(long folderId, String absolutePath, String filename, String extension,
@@ -88,6 +126,76 @@ public class MediaRepository {
               .execute();
             return id;
         });
+    }
+
+    /**
+     * Video counterpart to {@link #insertPhoto}. GPS is written here (rather than left to a
+     * separate update) since {@link com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor}
+     * can parse it directly from container location tags, unlike EXIF-only photos which get GPS
+     * through a separate path not yet exercised for the video branch.
+     */
+    public long insertVideo(long folderId, String absolutePath, String filename, String extension,
+                           long fileSize, Integer width, Integer height,
+                           LocalDateTime captureDate, CaptureDateSource captureDateSource,
+                           Long durationMs, String codec, Double frameRate, int rotationDegrees,
+                           Double gpsLat, Double gpsLon, Double gpsAltitude, LocalDateTime now) {
+        return dsl.transactionResult(conf -> {
+            DSLContext tx = DSL.using(conf);
+            Long id = tx.insertInto(MEDIA)
+                        .set(MEDIA.FOLDER_ID, folderId)
+                        .set(MEDIA.ABSOLUTE_PATH, absolutePath)
+                        .set(MEDIA.FILENAME, filename)
+                        .set(MEDIA.EXTENSION, extension)
+                        .set(MEDIA.FILE_SIZE, fileSize)
+                        .set(MEDIA.WIDTH, width)
+                        .set(MEDIA.HEIGHT, height)
+                        .set(MEDIA.CAPTURE_DATE, captureDate)
+                        .set(MEDIA.CAPTURE_DATE_SOURCE, sourceName(captureDateSource))
+                        .set(MEDIA.GPS_LAT, gpsLat)
+                        .set(MEDIA.GPS_LON, gpsLon)
+                        .set(MEDIA.GPS_ALTITUDE, gpsAltitude)
+                        .set(MEDIA.IMPORTED_AT, now)
+                        .set(MEDIA.LAST_SEEN_AT, now)
+                        .set(MEDIA.AI_UPDATED_AT, now)
+                        .set(MEDIA.MEDIA_TYPE, MediaType.VIDEO)
+                        .returning(MEDIA.ID)
+                        .fetchOne()
+                        .getId();
+            tx.insertInto(VIDEO)
+              .set(VIDEO.ID, id)
+              .set(VIDEO.DURATION_MS, durationMs)
+              .set(VIDEO.CODEC, codec)
+              .set(VIDEO.FRAME_RATE, frameRate)
+              .set(VIDEO.ROTATION, rotationDegrees)
+              .execute();
+            return id;
+        });
+    }
+
+    public List<Query> updateVideoMetadataQuery(long mediaId, long fileSize, Integer width, Integer height,
+                                                LocalDateTime captureDate, CaptureDateSource captureDateSource,
+                                                Long durationMs, String codec, Double frameRate, int rotationDegrees,
+                                                Double gpsLat, Double gpsLon, Double gpsAltitude, LocalDateTime now) {
+        return List.of(
+                dsl.update(MEDIA)
+                   .set(MEDIA.FILE_SIZE, fileSize)
+                   .set(MEDIA.WIDTH, width)
+                   .set(MEDIA.HEIGHT, height)
+                   .set(MEDIA.CAPTURE_DATE, captureDate)
+                   .set(MEDIA.CAPTURE_DATE_SOURCE, sourceName(captureDateSource))
+                   .set(MEDIA.GPS_LAT, gpsLat)
+                   .set(MEDIA.GPS_LON, gpsLon)
+                   .set(MEDIA.GPS_ALTITUDE, gpsAltitude)
+                   .set(MEDIA.LAST_SEEN_AT, now)
+                   .where(MEDIA.ID.eq(mediaId)),
+
+                dsl.update(VIDEO)
+                   .set(VIDEO.DURATION_MS, durationMs)
+                   .set(VIDEO.CODEC, codec)
+                   .set(VIDEO.FRAME_RATE, frameRate)
+                   .set(VIDEO.ROTATION, rotationDegrees)
+                   .where(VIDEO.ID.eq(mediaId))
+        );
     }
 
     public Query touchLastSeenAtQuery(long mediaId, LocalDateTime now) {
@@ -244,6 +352,27 @@ public class MediaRepository {
                 .fetch()
                 .stream()
                 .toList();
+    }
+
+    /**
+     * Mixed photo+video lookup by id — used by {@code ThumbnailGenerationJob}, which now
+     * generates thumbnails for whichever media type the grid actually asked for (see
+     * implementation plan §3).
+     */
+    public List<Media> findMediaByIdIn(Collection<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Result<MediaPhotoRecord> photo = selectPhotoMedia()
+                .where(MEDIA_PHOTO.ID.in(ids))
+                .fetch();
+        Result<MediaVideoRecord> video = selectVideoMedia()
+                .where(MEDIA_VIDEO.ID.in(ids))
+                .fetch();
+        return Stream.concat(
+                photo.stream().map(Media::photo),
+                video.stream().map(Media::video)
+        ).toList();
     }
 
     public Query markFaceDetectAndEmbedDoneQuery(long mediaId, LocalDateTime now) {

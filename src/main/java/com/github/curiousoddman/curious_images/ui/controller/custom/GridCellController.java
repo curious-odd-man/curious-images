@@ -1,7 +1,7 @@
 package com.github.curiousoddman.curious_images.ui.controller.custom;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.model.GridCellData;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.PersonDetails;
 import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
 import com.github.curiousoddman.curious_images.ui.util.GridContextMenu;
@@ -69,6 +69,8 @@ public class GridCellController implements Initializable {
     @FXML
     public  HBox       iconsHbox;
     @FXML
+    private FontIcon   videoPlayOverlay;
+    @FXML
     private StackPane  imageSlot;
     @FXML
     private Rectangle  placeholderRect;
@@ -78,7 +80,7 @@ public class GridCellController implements Initializable {
     private ImageView  imageView;
 
     @Setter
-    private Consumer<MediaPhotoRecord> onPhotoClicked;
+    private Consumer<Media> onPhotoClicked;
 
     @Getter
     private GridCellData gridCellData;
@@ -126,7 +128,7 @@ public class GridCellController implements Initializable {
         log.debug("Placeholder.... {}", data.mediaId());
         this.gridCellData = data;
         fxManage(cellRoot, placeholderRect, placeholderLabel);
-        fxUnmanage(imageView, iconsHbox);
+        fxUnmanage(imageView, iconsHbox, videoPlayOverlay);
         cellTooltip.setText(data.tooltipText());
         imageView.setImage(null);
     }
@@ -134,14 +136,14 @@ public class GridCellController implements Initializable {
     public void showEmpty() {
         log.debug("Disappear {}", gridCellData == null ? null : gridCellData.mediaId());
         this.gridCellData = null;
-        fxUnmanage(cellRoot, iconsHbox);
+        fxUnmanage(cellRoot, iconsHbox, videoPlayOverlay);
         imageView.setImage(null);
     }
 
     public void showImage(GridCellData data) {
         log.debug("Showing all data... {}", gridCellData.mediaId());
-        MediaPhotoRecord media = data.photo();
-        if (gridCellData.photo() != media) {
+        Media media = data.media();
+        if (gridCellData.media() != media) {
             log.debug("oops, media changed..");
             return;
         }
@@ -156,6 +158,9 @@ public class GridCellController implements Initializable {
         }
 
         fxManage(imageView, iconsHbox);
+        // Grid cell gets a small play-icon overlay to distinguish video tiles (implementation
+        // plan §3) — no hover-preview playback yet, this is browse-time only.
+        fxManage(data.isVideo(), videoPlayOverlay);
 
         fxManage(!data.tags()
                       .isEmpty(), tagIcon);
@@ -198,7 +203,7 @@ public class GridCellController implements Initializable {
     @FXML
     private void onCellClicked(MouseEvent e) {
         if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY && gridCellData != null && onPhotoClicked != null) {
-            onPhotoClicked.accept(gridCellData.photo());
+            onPhotoClicked.accept(gridCellData.media());
         }
     }
 

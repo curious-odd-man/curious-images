@@ -14,12 +14,14 @@ import com.github.curiousoddman.curious_images.domain.ai.RetinaFaceDetector;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.PersonService;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailGenerationJob;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailGenerator;
+import com.github.curiousoddman.curious_images.domain.common.thumbnail.VideoThumbnailGenerator;
 import com.github.curiousoddman.curious_images.domain.dedupe.DuplicateDetectionJob;
 import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
 import com.github.curiousoddman.curious_images.domain.dedupe.hasher.PixelHasher;
 import com.github.curiousoddman.curious_images.domain.imports.AddFilesJob;
 import com.github.curiousoddman.curious_images.domain.imports.ImportJob;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.PhotoMetadataExtractor;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor;
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
 import com.github.curiousoddman.curious_images.model.AddFilesRequest;
@@ -56,7 +58,9 @@ public class JobFactory {
     private final ThumbnailRepository thumbnailRepository;
     private final PhotoPreviewRepository photoPreviewRepository;
     private final PhotoMetadataExtractor photoMetadataExtractor;
+    private final VideoMetadataExtractor  videoMetadataExtractor;
     private final ThumbnailGenerator     thumbnailGenerator;
+    private final VideoThumbnailGenerator videoThumbnailGenerator;
     private final ImageUtils             imageUtils;
     private final TimeProvider           timeProvider;
 
@@ -93,6 +97,7 @@ public class JobFactory {
                 mediaRepository,
                 photoPreviewRepository,
                 photoMetadataExtractor,
+                videoMetadataExtractor,
                 timeProvider,
                 paths
         );
@@ -108,6 +113,7 @@ public class JobFactory {
                 mediaRepository,
                 thumbnailRepository,
                 imageUtils,
+                videoThumbnailGenerator,
                 thumbnailGenerator,
                 timeProvider,
                 photoIds

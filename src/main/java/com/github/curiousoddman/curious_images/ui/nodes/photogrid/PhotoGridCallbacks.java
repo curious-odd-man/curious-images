@@ -1,7 +1,7 @@
 package com.github.curiousoddman.curious_images.ui.nodes.photogrid;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.model.GridCellData;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.ui.controller.custom.GridCellController;
 import com.github.curiousoddman.curious_images.ui.controller.custom.PhotoGridRowController;
 import javafx.beans.value.ObservableValue;
@@ -24,7 +24,7 @@ public interface PhotoGridCallbacks {
     /**
      * Single-click on a cell — expected to open the slideshow at this media's position.
      */
-    void onPhotoClicked(MediaPhotoRecord photo);
+    void onPhotoClicked(Media photo);
 
     /**
      * A row just became visible showing {@code photos} (or was re-flowed to a different set while

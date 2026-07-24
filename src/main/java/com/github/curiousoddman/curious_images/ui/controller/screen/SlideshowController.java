@@ -200,8 +200,10 @@ public class SlideshowController implements Initializable {
                              // Only apply if the user hasn't navigated away
                              if (slideshowMedia.get(currentIndex) == media) {
                                  fullImageView.setImage(fullImage);
-                                 rotateIfNeeded(media.photo()
-                                                     .getOrientation());
+                                 if (media.isPhoto()) {
+                                     rotateIfNeeded(media.photo()
+                                                         .getOrientation());
+                                 }
                                  crossFadeToFull();
                                  runOnFxThread(() -> rootPane.requestFocus());
                              }

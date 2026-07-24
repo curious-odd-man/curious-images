@@ -17,5 +17,12 @@ public enum ImportOutcome {
     /**
      * A PHOTO row existed with the same file size — only {@code last_seen_at} was touched.
      */
-    SKIPPED_UNCHANGED
+    SKIPPED_UNCHANGED,
+    /**
+     * A video file was discovered but its video/audio codec isn't H.264/AAC — rejected at import
+     * time rather than stored, since the hover-preview/full-screen playback promise can only be
+     * kept for what JavaFX {@code MediaPlayer} can natively decode. See implementation plan
+     * "Accepted formats" decision and {@code VideoMetadataExtractor}.
+     */
+    REJECTED_UNSUPPORTED_CODEC
 }

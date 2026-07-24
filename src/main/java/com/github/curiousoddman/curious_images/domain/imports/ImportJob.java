@@ -1,12 +1,15 @@
 package com.github.curiousoddman.curious_images.domain.imports;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.ExtractedMetadata;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.ExtractedVideoMetadata;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.PhotoMetadataExtractor;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.UnsupportedVideoCodecException;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor;
 import com.github.curiousoddman.curious_images.event.model.LibraryUpdatedEvent;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaRepository.ExistingMediaSummary;
 import com.github.curiousoddman.curious_images.persistence.PhotoPreviewRepository;
 import com.github.curiousoddman.curious_images.util.FileCollectingVisitor;
 import com.github.curiousoddman.curious_images.util.FileUtils;
@@ -35,7 +38,14 @@ public class ImportJob extends BackgroundJob {
 
     public static final String IMPORT_SCAN = "Import Scan";
 
-    private static final Set<String> SUPPORTED_EXTENSIONS     = Set.of("jpg", "jpeg", "png", "cr2");
+    private static final Set<String> IMAGE_EXTENSIONS         = Set.of("jpg", "jpeg", "png", "cr2");
+    /**
+     * MP4/MOV/M4V containers only — codec is validated per-file at import time (H.264 video +
+     * AAC audio only, see implementation plan "Accepted formats" decision); a container with
+     * these extensions but a different codec is discovered and rejected in {@link #importOneVideo}.
+     */
+    private static final Set<String> VIDEO_EXTENSIONS         = Set.of("mp4", "mov", "m4v");
+    private static final Set<String> SUPPORTED_EXTENSIONS     = union(IMAGE_EXTENSIONS, VIDEO_EXTENSIONS);
     private static final int         DB_FLUSH_BATCH_SIZE      = 200;
     private static final int         APPROXIMATE_LIBRARY_SIZE = 25_000;
 
@@ -45,6 +55,7 @@ public class ImportJob extends BackgroundJob {
     private final MediaRepository        mediaRepository;
     private final PhotoPreviewRepository photoPreviewRepository;
     private final PhotoMetadataExtractor metadataExtractor;
+    private final VideoMetadataExtractor videoMetadataExtractor;
     private final TimeProvider           timeProvider;
     private final List<String>           rootPaths;
 
@@ -66,9 +77,10 @@ public class ImportJob extends BackgroundJob {
     void runImportInternal(String rootPathString) {
         log.info("Starting import scan of {}", rootPathString);
         publishStarted("Discovering files…");
-        int imported = 0;
-        int skipped  = 0;
-        int errors   = 0;
+        int imported      = 0;
+        int skipped       = 0;
+        int errors        = 0;
+        int rejectedCodec = 0;
         try {
             Path            rootPath      = Path.of(rootPathString);
             long            importRootId  = importRootRepository.findOrCreate(rootPathString, timeProvider.now());
@@ -89,10 +101,10 @@ public class ImportJob extends BackgroundJob {
                 Path file = files.get(i);
                 try {
                     ImportOutcome outcome = importOneFile(rootPath, importRootId, folderIdCache, file, buffer);
-                    if (outcome == ImportOutcome.SKIPPED_UNCHANGED) {
-                        skipped++;
-                    } else {
-                        imported++;
+                    switch (outcome) {
+                        case SKIPPED_UNCHANGED -> skipped++;
+                        case REJECTED_UNSUPPORTED_CODEC -> rejectedCodec++;
+                        default -> imported++;
                     }
                 } catch (Exception e) {
                     errors++;
@@ -108,10 +120,10 @@ public class ImportJob extends BackgroundJob {
             flush(buffer);
 
             importRootRepository.updateLastScannedAt(importRootId, timeProvider.now());
-            log.info("Import scan of {} completed: {} imported/updated, {} skipped, {} errors",
-                    rootPathString, imported, skipped, errors);
-            publishEnded("Imported/updated %d, skipped %d unchanged, %d errors"
-                    .formatted(imported, skipped, errors));
+            log.info("Import scan of {} completed: {} imported/updated, {} skipped, {} unsupported codec, {} errors",
+                    rootPathString, imported, skipped, rejectedCodec, errors);
+            publishEnded("Imported/updated %d, skipped %d unchanged, %d unsupported codec, %d errors"
+                    .formatted(imported, skipped, rejectedCodec, errors));
         } catch (Exception e) {
             log.error("Import scan of {} failed", rootPathString, e);
             publishFailed(e);
@@ -122,23 +134,33 @@ public class ImportJob extends BackgroundJob {
 
     private ImportOutcome importOneFile(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
                                         Path file, List<Query> buffer) throws IOException {
+        String filename  = file.getFileName()
+                               .toString();
+        String extension = FileUtils.extensionOf(filename);
+
+        if (VIDEO_EXTENSIONS.contains(extension)) {
+            return importOneVideo(rootPath, importRootId, folderIdCache, file, filename, extension, buffer);
+        }
+        return importOnePhoto(rootPath, importRootId, folderIdCache, file, filename, extension, buffer);
+    }
+
+    private ImportOutcome importOnePhoto(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
+                                         Path file, String filename, String extension,
+                                         List<Query> buffer) throws IOException {
         long folderId = resolveFolderId(importRootId, rootPath, file.getParent(), folderIdCache);
         String absolutePath = file.toAbsolutePath()
                                   .toString();
-        String filename = file.getFileName()
-                              .toString();
-        String        extension = FileUtils.extensionOf(filename);
-        long          fileSize  = Files.size(file);
-        LocalDateTime now       = timeProvider.now();
+        long          fileSize = Files.size(file);
+        LocalDateTime now      = timeProvider.now();
 
-        Optional<MediaPhotoRecord> existing = mediaRepository.findByAbsolutePath(absolutePath);
+        Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
         if (existing.isPresent() && existing.get()
-                                            .getFileSize() == fileSize) {
+                                            .fileSize() == fileSize) {
             // Cheap rescan: file unchanged. Touch last_seen_at; do NOT reset AI status flags —
             // partial AI progress from a previous run is preserved.
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
-                                                                    .getId(), now));
+                                                                    .id(), now));
             return ImportOutcome.SKIPPED_UNCHANGED;
         }
 
@@ -146,7 +168,7 @@ public class ImportJob extends BackgroundJob {
 
         if (existing.isPresent()) {
             long photoId = existing.get()
-                                   .getId();
+                                   .id();
             buffer.addAll(mediaRepository.updateMetadataQuery(photoId, fileSize,
                     metadata.width(), metadata.height(),
                     metadata.captureDate(), metadata.captureDateSource(),
@@ -166,6 +188,59 @@ public class ImportJob extends BackgroundJob {
                 metadata.cameraModel(), metadata.lensModel(),
                 metadata.exifExtraJson(), now);
         queuePreview(photoId, metadata, buffer);
+        return ImportOutcome.IMPORTED;
+    }
+
+    /**
+     * Video counterpart to {@link #importOnePhoto} (see implementation plan §2). The only branch
+     * point beyond "which extractor/repository method to call" is codec validation: a video whose
+     * codec {@link VideoMetadataExtractor} rejects is neither inserted nor updated — it's simply
+     * reported as skipped, same file-level isolation as a corrupt/unreadable photo.
+     */
+    private ImportOutcome importOneVideo(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
+                                         Path file, String filename, String extension,
+                                         List<Query> buffer) throws IOException {
+        long folderId = resolveFolderId(importRootId, rootPath, file.getParent(), folderIdCache);
+        String absolutePath = file.toAbsolutePath()
+                                  .toString();
+        long          fileSize = Files.size(file);
+        LocalDateTime now      = timeProvider.now();
+
+        Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
+
+        if (existing.isPresent() && existing.get()
+                                            .fileSize() == fileSize) {
+            buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
+                                                                    .id(), now));
+            return ImportOutcome.SKIPPED_UNCHANGED;
+        }
+
+        ExtractedVideoMetadata metadata;
+        try {
+            metadata = videoMetadataExtractor.extract(file);
+        } catch (UnsupportedVideoCodecException e) {
+            // Reported in the ENDED summary's "unsupported codec" count — see runImportInternal.
+            log.warn("Skipping unsupported video codec: {}", e.getMessage());
+            return ImportOutcome.REJECTED_UNSUPPORTED_CODEC;
+        }
+
+        if (existing.isPresent()) {
+            long videoId = existing.get()
+                                   .id();
+            buffer.addAll(mediaRepository.updateVideoMetadataQuery(videoId, fileSize,
+                    metadata.width(), metadata.height(),
+                    metadata.captureDate(), metadata.captureDateSource(),
+                    metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
+                    metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now));
+            buffer.add(mediaRepository.resetAiFields(videoId));
+            return ImportOutcome.UPDATED;
+        }
+
+        mediaRepository.insertVideo(folderId, absolutePath, filename, extension, fileSize,
+                metadata.width(), metadata.height(),
+                metadata.captureDate(), metadata.captureDateSource(),
+                metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
+                metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now);
         return ImportOutcome.IMPORTED;
     }
 

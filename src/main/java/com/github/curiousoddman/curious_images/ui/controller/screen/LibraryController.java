@@ -1,6 +1,5 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.domain.ai.ModelDownloadJob;
 import com.github.curiousoddman.curious_images.domain.ai.ModelPaths;
 import com.github.curiousoddman.curious_images.domain.search.SearchAutocompleteManager;
@@ -11,6 +10,7 @@ import com.github.curiousoddman.curious_images.event.payload.BackgroundProcessPa
 import com.github.curiousoddman.curious_images.event.types.BackgroundProcessEventType;
 import com.github.curiousoddman.curious_images.model.GridCellData;
 import com.github.curiousoddman.curious_images.model.LoadedFxml;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.UiElement;
 import com.github.curiousoddman.curious_images.model.bundle.AddFilesBundle;
 import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
@@ -323,11 +323,10 @@ public class LibraryController implements Initializable {
         runOnDaemonThread("Search", () -> {
             try {
                 List<Long> photoIds = searchService.search(query, SEARCH_TOP_K);
-                List<MediaPhotoRecord> photos = photoIds.stream()
-                                                   .map(id -> mediaRepository.findById(id)
-                                                                             .orElse(null))
-                                                   .filter(Objects::nonNull)
-                                                   .toList();
+                List<Media> photos = photoIds.stream()
+                                             .map(mediaRepository::findMediaById)
+                                             .filter(Objects::nonNull)
+                                             .toList();
                 runOnFxThread(() -> {
                     if (myGeneration != gridController.currentChange()) {
                         return;
