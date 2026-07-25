@@ -41,3 +41,4 @@ logs
 /src/main/resources/models/*
 !/src/main/resources/models/ai.md
 faces
+/.ollamassist/conversations/0b247a7d-4adb-41a2-b32e-5346a027c779.json

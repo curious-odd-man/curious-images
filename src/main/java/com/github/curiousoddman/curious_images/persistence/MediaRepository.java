@@ -334,13 +334,6 @@ public class MediaRepository {
                      .toList();
     }
 
-    public Optional<MediaPhotoRecord> findPhotoById(long mediaId) {
-        return Optional.ofNullable(
-                selectPhotoMedia()
-                        .where(MEDIA_PHOTO.ID.eq(mediaId))
-                        .fetchOne());
-    }
-
     public List<MediaPhotoRecord> findByNullCaptureDate() {
         return selectPhotoMedia()
                 .where(MEDIA_PHOTO.CAPTURE_DATE.isNull())
@@ -348,6 +341,26 @@ public class MediaRepository {
                 .fetchInto(MediaPhotoRecord.class);
     }
 
+    public Optional<MediaPhotoRecord> findById(long mediaId) {
+        return Optional.ofNullable(
+                selectPhotoMedia()
+                        .where(MEDIA_PHOTO.ID.eq(mediaId))
+                        .fetchOne());
+    }
+
+    public List<MediaPhotoRecord> findByIdIn(Collection<Long> ids) {
+        return selectPhotoMedia()
+                .where(MEDIA_PHOTO.ID.in(ids))
+                .fetch()
+                .stream()
+                .toList();
+    }
+
+    /**
+     * Mixed photo+video lookup by id — used by {@code ThumbnailGenerationJob}, which now
+     * generates thumbnails for whichever media type the grid actually asked for (see
+     * implementation plan §3).
+     */
     public List<Media> findMediaByIdIn(Collection<Long> ids) {
         if (ids.isEmpty()) {
             return List.of();

@@ -5,13 +5,13 @@ import com.github.curiousoddman.curious_images.dbobj.tables.records.ClipEmbeddin
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ClusterRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FaceEmbeddingRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FaceRecord;
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.TagEmbeddingRecord;
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
 import com.github.curiousoddman.curious_images.event.model.UserNotificationEvent;
 import com.github.curiousoddman.curious_images.event.payload.FaceClipProcessingFailed;
 import com.github.curiousoddman.curious_images.model.FaceLandmarks;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.persistence.ClipEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.ClusterRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingRepository;
@@ -71,7 +71,10 @@ public class AiPipelineJob extends BackgroundJob {
     private final FaceThumbnailsRepository faceThumbnailsRepository;
     private final JobManager               jobManager;
     private final ImageUtils               imageUtils;
+    private final VideoFrameSampler        videoFrameSampler;
     private final boolean                  faceDetectionOnly;
+    private final int                      videoFrameSampleCount;
+    private final int                      videoFrameSampleIntervalSeconds;
     private final ClipTextEncoder          clipTextEncoder;
     private final PhotoTagRepository       tagRepository;
 
@@ -235,40 +238,54 @@ public class AiPipelineJob extends BackgroundJob {
             return true;
         }
 
-        long             photoId       = photoIds.get(i);
-        LocalDateTime    now           = timeProvider.now();
-        String           lastPhotoPath = "";
-        Mat              img           = null;
-        MediaPhotoRecord photo         = null;
+        long          photoId       = photoIds.get(i);
+        LocalDateTime now           = timeProvider.now();
+        String        lastPhotoPath = "";
+        Media         media         = null;
+        List<Frame>   frames        = List.of();
         try {
-            photo = photoRepo.findPhotoById(photoId)
-                             .orElseThrow(() -> new IllegalStateException("Photo not found: " + photoId));
-            lastPhotoPath = photo.getAbsolutePath();
-            img = imageUtils.imageOrCr2Preview(photo)
-                            .orElseThrow();
+            media = photoRepo.findMediaById(photoId);
+            if (media == null) {
+                throw new IllegalStateException("Media not found: " + photoId);
+            }
+            lastPhotoPath = media.getAbsolutePath();
 
-            if (faceSet.contains(photoId)) {
-                List<DetectedFace> faces = retinaFaceDetector.detect(img);
-                for (DetectedFace face : faces) {
-                    Path faceThumbnailPath = faceThumbnailsRepository.createFaceThumbnail(photo.getAbsolutePath(), ImageUtils.toBufferedImage(img), face);
-                    long faceId = faceRepo.insertAndGetId(
-                            photoId, face.x(), face.y(), face.w(), face.h(),
-                            face.confidence(), toLandmarks(face.landmarks()), now, faceThumbnailPath);
-
-                    Mat     aligned   = faceAligner.align(faceId, img, face.landmarks());
-                    float[] embedding = arcFaceEncoder.encode(aligned);
-                    aligned.release();
-                    buffer.add(faceEmbeddingRepo.upsertQuery(faceId, embedding, ARCFACE_MODEL_VER));
-                }
-                buffer.add(photoRepo.markFaceDetectAndEmbedDoneQuery(photoId, now));
+            frames = loadFrames(media);
+            if (frames.isEmpty()) {
+                throw new IllegalStateException("No frames could be decoded for " + lastPhotoPath);
             }
 
+            for (Frame frame : frames) {
+                if (faceSet.contains(photoId)) {
+                    List<DetectedFace> faces = retinaFaceDetector.detect(frame.img());
+                    for (DetectedFace face : faces) {
+                        Path faceThumbnailPath = faceThumbnailsRepository.createFaceThumbnail(
+                                lastPhotoPath, ImageUtils.toBufferedImage(frame.img()), face, frame.offsetMs());
+                        long faceId = faceRepo.insertAndGetId(
+                                photoId, face.x(), face.y(), face.w(), face.h(),
+                                face.confidence(), toLandmarks(face.landmarks()), now, faceThumbnailPath,
+                                frame.offsetMs());
+
+                        Mat     aligned   = faceAligner.align(faceId, frame.img(), face.landmarks());
+                        float[] embedding = arcFaceEncoder.encode(aligned);
+                        aligned.release();
+                        buffer.add(faceEmbeddingRepo.upsertQuery(faceId, embedding, ARCFACE_MODEL_VER));
+                    }
+                }
+
+                if (clipSet.contains(photoId)) {
+                    float[] clipEmbedding = clipImageEncoder.encode(frame.img());
+                    buffer.add(clipEmbeddingRepo.upsertQuery(photoId, frame.offsetMs(), clipEmbedding, CLIP_IMAGE_MODEL_VER));
+                }
+            }
+
+            // One "done" flag per media, not per frame — a video's 3 sampled frames still only
+            // flip face_detect_done/clip_embed_done once each (implementation plan §5).
+            if (faceSet.contains(photoId)) {
+                buffer.add(photoRepo.markFaceDetectAndEmbedDoneQuery(photoId, now));
+            }
             if (clipSet.contains(photoId)) {
-                float[] clipEmbedding = clipImageEncoder.encode(img);
-                buffer.add(
-                        clipEmbeddingRepo.upsertQuery(photoId, clipEmbedding, CLIP_IMAGE_MODEL_VER),
-                        photoRepo.markClipEmbedDoneQuery(photoId, now)
-                );
+                buffer.add(photoRepo.markClipEmbedDoneQuery(photoId, now));
             }
         } catch (IrrecoverableIterationException e) {
             log.warn("Face/CLIP processing failed for media {}", photoId, e);
@@ -278,17 +295,49 @@ public class AiPipelineJob extends BackgroundJob {
             return true;
         } catch (Exception e) {
             log.error("Face/CLIP processing failed for media {}", photoId, e);
-            eventPublisher.publishEvent(new UserNotificationEvent(this, new FaceClipProcessingFailed(photo, e)));
+            eventPublisher.publishEvent(new UserNotificationEvent(this, new FaceClipProcessingFailed(media, e)));
             buffer.add(photoRepo.markErrorQuery(photoId, e.getMessage(), now));
         } finally {
-            if (img != null) {
-                img.release(); // native memory — must release explicitly, GC won't do it
+            for (Frame frame : frames) {
+                frame.img()
+                     .release(); // native memory — must release explicitly, GC won't do it
             }
         }
 
         publishProgressThrottled("Processing photos", i + 1, photoIds.size(),
                 lastPhotoPath, i == photoIds.size() - 1);
         return false;
+    }
+
+    /**
+     * Loads the frame(s) to run face/CLIP detection on for one media: a photo is always exactly
+     * one frame with a {@code null} offset; a video is sampled into a handful of frames via
+     * {@link VideoFrameSampler}, each carrying its own timestamp so the resulting face/
+     * clip_embedding rows can record {@code frame_offset_ms} (implementation plan §5). Never
+     * throws for a bad file — returns an empty list, which the caller treats as a processing
+     * failure for that one media (same "isolate one bad file" policy as everywhere else in this
+     * pipeline).
+     */
+    private List<Frame> loadFrames(Media media) {
+        if (media.isVideo()) {
+            List<VideoFrameSampler.SampledFrame> sampled = videoFrameSampler.sample(
+                    Path.of(media.getAbsolutePath()), videoFrameSampleCount, videoFrameSampleIntervalSeconds);
+            List<Frame> frames = new ArrayList<>(sampled.size());
+            for (VideoFrameSampler.SampledFrame sample : sampled) {
+                frames.add(new Frame(sample.offsetMs(), imageUtils.toMat(sample.image())));
+            }
+            return frames;
+        }
+        return imageUtils.imageOrCr2Preview(media.photo())
+                         .map(img -> List.of(new Frame(null, img)))
+                         .orElse(List.of());
+    }
+
+    /**
+     * One frame to run detection on: {@code offsetMs} is {@code null} for a photo, or the sampled
+     * timestamp within a video.
+     */
+    private record Frame(Long offsetMs, Mat img) {
     }
 
     // ── Stage 4: Lucene indexing ──────────────────────────────────────────────
@@ -312,12 +361,12 @@ public class AiPipelineJob extends BackgroundJob {
                 long          photoId = photoIds.get(i);
                 LocalDateTime now     = timeProvider.now();
                 try {
-                    // Index CLIP embedding
-                    ClipEmbeddingRecord clipRec = clipEmbeddingRepo.findByMediaId(photoId)
-                                                                   .orElse(null);
-                    if (clipRec != null) {
+                    // Index CLIP embedding(s) — a video can have several, one per sampled frame
+                    // (implementation plan §5); each gets its own Lucene doc (see ClipVectorIndex).
+                    List<ClipEmbeddingRecord> clipRecs = clipEmbeddingRepo.findAllByMediaId(photoId);
+                    for (ClipEmbeddingRecord clipRec : clipRecs) {
                         float[] clipEmbed = EmbeddingMath.getFloats(clipRec.getEmbedding());
-                        clipVectorIndex.upsert(photoId, clipEmbed);
+                        clipVectorIndex.upsert(photoId, clipRec.getFrameOffsetMs(), clipEmbed);
                     }
 
                     // Index face embeddings

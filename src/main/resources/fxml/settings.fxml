@@ -83,7 +83,27 @@
 
     <Separator />
 
-    <!-- ── Section 3: Storage (restart required) ─────────────────────────── -->
+    <!-- ── Section 3: Video frame sampling (live) ────────────────────────── -->
+    <Label text="Video frame sampling" styleClass="bold-label" />
+    <Label text="Affects the next AI pipeline run, not videos already processed."
+           wrapText="true" style="-fx-font-size: 11px; -fx-text-fill: gray;" />
+
+    <GridPane hgap="10.0" vgap="8.0">
+        <columnConstraints>
+            <ColumnConstraints minWidth="180.0" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+
+        <Label text="Frames sampled per video:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+        <Spinner fx:id="videoFrameSampleCountSpinner" editable="true" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+        <Label text="Min seconds between samples:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <Spinner fx:id="videoFrameSampleIntervalSpinner" editable="true" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+    </GridPane>
+
+    <Separator />
+
+    <!-- ── Section 4: Storage (restart required) ─────────────────────────── -->
     <Label text="Storage paths" styleClass="bold-label" />
     <Label fx:id="restartNoticeLabel" text="Requires an app restart to take effect."
            wrapText="true" style="-fx-font-size: 11px; -fx-text-fill: gray;" />

@@ -8,7 +8,7 @@
 | 2. Video import + browse (extension filtering, metadata, thumbnails, plain grid)      | 🟢 Completed  |
 | 3. Hover-preview playback                                                             | 🟢 Completed  |
 | 4. Duplicate detection (file-hash, `media_hash`)                                      | 🟢 Completed  |
-| 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | ⬜ Not started |
+| 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | 🟢 Completed  |
 | 6. Albums + unified search, `MediaItem` abstraction                                   | ⬜ Not started |
 
 ## Phase 2 — what landed
@@ -69,10 +69,40 @@
 - Fixed two more unconditional `.photo()` casts that duplicate video groups would have hit:
   `DuplicatesController.resolveActivePane` and `FolderDuplicatesController.createPhotoTile`.
 
+## Phase 5 — what landed
+
+- `VideoFrameSampler`: samples a handful of frames per video via JavaCV, spaced evenly across the
+  10%-90% span of duration (count=3 → 10/50/90%, matching the plan's example), capped down by a
+  minimum-interval-seconds setting for short videos. Both knobs are Settings-screen spinners
+  ("Video frame sampling" section), live-applied via `AiSettingsService`/`AiConfig`, same pattern
+  as the existing performance/album-tuning settings.
+- `AiPipelineJob`'s face/CLIP stage now branches on media type: a photo still processes exactly
+  one frame; a video samples N frames and runs the *existing* `RetinaFaceDetector`/`ArcFaceEncoder`/
+  `ClipImageEncoder` on each — no new AI models, just a loop. Every resulting `face`/
+  `clip_embedding` row records `frame_offset_ms`.
+- `face` and `clip_embedding` schemas already had `frame_offset_ms` from Phase 1 — no migration
+  needed this phase.
+- `ClipEmbeddingRepository`/`FaceRepository` updated to key on `(media_id, frame_offset_ms)` /
+  accept a frame offset; `FaceThumbnailsRepository` disambiguates thumbnail filenames by frame
+  offset so two frames with a face at the same bbox don't collide.
+- `ClipVectorIndex` reworked to support multiple Lucene docs per media (one per sampled frame):
+  each doc gets a synthetic `row_id` key so upserting one frame never clobbers another; `photo_id`
+  stays indexed so per-media bulk delete and search-result mapping still work in one call each.
+  `search()` now dedups multiple frame-hits from the same video down to one result, best-scoring
+  frame wins (a first slice of implementation plan §7's "collapsed into one search result").
+  `FaceVectorIndex` needed **no changes** — it was already keyed by face id, not media id.
+- `PersonClusteringService` audited end-to-end: it only ever operates on `FaceRecord.getId()` and
+  never looks at which media a face came from, so it already handles "same media, multiple
+  embeddings" correctly with zero code changes — confirms the plan's own expectation.
+- Found and fixed a real bug this phase would have introduced: `AlbumGenerationJob`'s similarity-
+  clustering read every `clip_embedding` row as one point, so a single video with 3 sampled frames
+  would've clustered (and tried to insert into `album_photo`) as if it were 3 separate photos. Now
+  deduplicates to one representative embedding per media before clustering.
+- Generalized `FaceClipProcessingFailed` from `MediaPhotoRecord` to `Media` so a video's
+  processing failures surface correctly too.
+
 ## Open items still worth a decision before/while coding
 
-- **Frame-sampling defaults** (AI pipeline, phase 5) — proposed 10/50/90% heuristic, capped count;
-  exposed as a Settings-screen knob from day one rather than a hardcoded guess.
 - **`hash_type` on `media_hash`** (dedupe, phase 4) — confirms photos and videos are never
   cross-compared for duplicates; worth double-checking this matches expectations before
   implementation.

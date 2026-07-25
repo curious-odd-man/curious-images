@@ -134,7 +134,8 @@ public class ImportJob extends BackgroundJob {
 
     private ImportOutcome importOneFile(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
                                         Path file, List<Query> buffer) throws IOException {
-        String filename  = file.getFileName().toString();
+        String filename  = file.getFileName()
+                               .toString();
         String extension = FileUtils.extensionOf(filename);
 
         if (VIDEO_EXTENSIONS.contains(extension)) {
@@ -154,17 +155,20 @@ public class ImportJob extends BackgroundJob {
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
-        if (existing.isPresent() && existing.get().fileSize() == fileSize) {
+        if (existing.isPresent() && existing.get()
+                                            .fileSize() == fileSize) {
             // Cheap rescan: file unchanged. Touch last_seen_at; do NOT reset AI status flags —
             // partial AI progress from a previous run is preserved.
-            buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get().id(), now));
+            buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
+                                                                    .id(), now));
             return ImportOutcome.SKIPPED_UNCHANGED;
         }
 
         ExtractedMetadata metadata = metadataExtractor.extract(file, extension);
 
         if (existing.isPresent()) {
-            long photoId = existing.get().id();
+            long photoId = existing.get()
+                                   .id();
             buffer.addAll(mediaRepository.updateMetadataQuery(photoId, fileSize,
                     metadata.width(), metadata.height(),
                     metadata.captureDate(), metadata.captureDateSource(),
@@ -204,8 +208,10 @@ public class ImportJob extends BackgroundJob {
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
-        if (existing.isPresent() && existing.get().fileSize() == fileSize) {
-            buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get().id(), now));
+        if (existing.isPresent() && existing.get()
+                                            .fileSize() == fileSize) {
+            buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
+                                                                    .id(), now));
             return ImportOutcome.SKIPPED_UNCHANGED;
         }
 
@@ -219,7 +225,8 @@ public class ImportJob extends BackgroundJob {
         }
 
         if (existing.isPresent()) {
-            long videoId = existing.get().id();
+            long videoId = existing.get()
+                                   .id();
             buffer.addAll(mediaRepository.updateVideoMetadataQuery(videoId, fileSize,
                     metadata.width(), metadata.height(),
                     metadata.captureDate(), metadata.captureDateSource(),

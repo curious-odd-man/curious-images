@@ -33,15 +33,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AiSettingsService {
 
-    private final AiConfig           aiConfig;
-    private final DataAccess         dataAccess;
-    private final OnnxModelRegistry  onnxModelRegistry;
+    private final AiConfig          aiConfig;
+    private final DataAccess        dataAccess;
+    private final OnnxModelRegistry onnxModelRegistry;
 
     // Fallback defaults if nothing has ever been persisted for these two - they used to be bound
     // via @Value directly onto JobFactory; now AiConfig is the single source of truth, seeded
     // from these yaml keys the first time the app runs.
     @Value("${app.duplicate-detection.thread-count:4}")
-    private int yamlDuplicateDetectionThreadCount;
+    private int     yamlDuplicateDetectionThreadCount;
     @Value("${ai.features.face-only:false}")
     private boolean yamlFaceOnly;
 
@@ -49,7 +49,8 @@ public class AiSettingsService {
     public void applyPersistedOverrides() {
         aiConfig.setExecutionProvider(
                 AiConfig.ExecutionProvider.valueOf(
-                        dataAccess.getUserPref(UserPrefKey.AI_EXECUTION_PROVIDER, aiConfig.getExecutionProvider().name())));
+                        dataAccess.getUserPref(UserPrefKey.AI_EXECUTION_PROVIDER, aiConfig.getExecutionProvider()
+                                                                                          .name())));
         aiConfig.setIntraOpThreads(getInt(UserPrefKey.AI_INTRA_OP_THREADS, aiConfig.getIntraOpThreads()));
         aiConfig.setBatchSize(getInt(UserPrefKey.AI_BATCH_SIZE, aiConfig.getBatchSize()));
         aiConfig.setDuplicateDetectionThreadCount(getInt(UserPrefKey.AI_DUPLICATE_DETECTION_THREAD_COUNT, yamlDuplicateDetectionThreadCount));
@@ -59,6 +60,8 @@ public class AiSettingsService {
         aiConfig.setMinLocationSize(getInt(UserPrefKey.AI_MIN_LOCATION_SIZE, aiConfig.getMinLocationSize()));
         aiConfig.setMinClusterSize(getInt(UserPrefKey.AI_MIN_CLUSTER_SIZE, aiConfig.getMinClusterSize()));
         aiConfig.setMinClusterSimilarity(getFloat(UserPrefKey.AI_MIN_CLUSTER_SIMILARITY, aiConfig.getMinClusterSimilarity()));
+        aiConfig.setVideoFrameSampleCount(getInt(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_COUNT, aiConfig.getVideoFrameSampleCount()));
+        aiConfig.setVideoFrameSampleIntervalSeconds(getInt(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS, aiConfig.getVideoFrameSampleIntervalSeconds()));
         log.info("Applied persisted AI settings: provider={}, intraOpThreads={}, batchSize={}, dedupeThreads={}, faceOnly={}",
                 aiConfig.getExecutionProvider(), aiConfig.getIntraOpThreads(), aiConfig.getBatchSize(),
                 aiConfig.getDuplicateDetectionThreadCount(), aiConfig.isFaceOnly());
@@ -121,6 +124,18 @@ public class AiSettingsService {
     public void setMinClusterSimilarity(float similarity) {
         aiConfig.setMinClusterSimilarity(similarity);
         dataAccess.setUserPref(UserPrefKey.AI_MIN_CLUSTER_SIMILARITY, String.valueOf(similarity));
+    }
+
+    // ── Video frame sampling (take effect on next AI pipeline run) ──────────────
+
+    public void setVideoFrameSampleCount(int count) {
+        aiConfig.setVideoFrameSampleCount(count);
+        dataAccess.setUserPref(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_COUNT, String.valueOf(count));
+    }
+
+    public void setVideoFrameSampleIntervalSeconds(int seconds) {
+        aiConfig.setVideoFrameSampleIntervalSeconds(seconds);
+        dataAccess.setUserPref(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS, String.valueOf(seconds));
     }
 
     public AiConfig config() {

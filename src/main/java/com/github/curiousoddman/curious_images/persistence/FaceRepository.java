@@ -44,10 +44,15 @@ public class FaceRepository {
      * Unlike {@link #insertQuery}, this executes right away rather than being queued for
      * batching — needed by the merged detect+embed pipeline, which requires the face id
      * synchronously to write the corresponding face_embedding row in the same pass.
+     *
+     * @param frameOffsetMs {@code null} for a photo; the sampled-frame timestamp (ms) for a video
+     *                      (implementation plan §5) — lets a face be traced back to "this moment
+     *                      in the video".
      */
     public long insertAndGetId(long photoId, double x, double y, double w, double h,
-                               double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath) {
-        return createRecord(photoId, x, y, w, h, confidence, faceLandmarks, now, thumbnailPath)
+                               double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath,
+                               Long frameOffsetMs) {
+        return createRecord(photoId, x, y, w, h, confidence, faceLandmarks, now, thumbnailPath, frameOffsetMs)
                 .returning(FACE.ID)
                 .fetchOne()
                 .getId();
@@ -58,8 +63,9 @@ public class FaceRepository {
      * via {@code dsl.transaction(cfg -> DSL.using(cfg).batch(buffer).execute())}.
      */
     public Query insertQuery(long photoId, double x, double y, double w, double h,
-                             double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath) {
-        return createRecord(photoId, x, y, w, h, confidence, faceLandmarks, now, thumbnailPath);
+                             double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath,
+                             Long frameOffsetMs) {
+        return createRecord(photoId, x, y, w, h, confidence, faceLandmarks, now, thumbnailPath, frameOffsetMs);
     }
 
     public Optional<FaceRecord> findById(long id) {
@@ -236,7 +242,7 @@ public class FaceRepository {
                   .collect(toMap(r -> r.get(FACE.ID), r -> r.get(CLUSTER.PERSON_ID)));
     }
 
-    private InsertSetMoreStep<FaceRecord> createRecord(long photoId, double x, double y, double w, double h, double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath) {
+    private InsertSetMoreStep<FaceRecord> createRecord(long photoId, double x, double y, double w, double h, double confidence, FaceLandmarks faceLandmarks, LocalDateTime now, Path thumbnailPath, Long frameOffsetMs) {
         return dsl.insertInto(FACE)
                   .set(FACE.MEDIA_ID, photoId)
                   .set(FACE.BBOX_X, x)
@@ -256,6 +262,7 @@ public class FaceRepository {
                   .set(FACE.LANDMARK_RIGHT_MOUTH_Y, faceLandmarks.rightMouthY())
                   .set(FACE.CREATED_AT, now)
                   .set(FACE.THUMBNAIL_ABSOLUTE_PATH, thumbnailPath.toAbsolutePath()
-                                                                  .toString());
+                                                                  .toString())
+                  .set(FACE.FRAME_OFFSET_MS, frameOffsetMs);
     }
 }

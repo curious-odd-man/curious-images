@@ -11,12 +11,12 @@ import com.github.curiousoddman.curious_images.domain.ai.ModelDownloadJob;
 import com.github.curiousoddman.curious_images.domain.ai.ModelPaths;
 import com.github.curiousoddman.curious_images.domain.ai.PersonClusteringService;
 import com.github.curiousoddman.curious_images.domain.ai.RetinaFaceDetector;
+import com.github.curiousoddman.curious_images.domain.ai.VideoFrameSampler;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.PersonService;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailGenerationJob;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.ThumbnailGenerator;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.VideoThumbnailGenerator;
 import com.github.curiousoddman.curious_images.domain.dedupe.DuplicateDetectionJob;
-import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
 import com.github.curiousoddman.curious_images.domain.dedupe.hasher.FileHasher;
 import com.github.curiousoddman.curious_images.domain.dedupe.hasher.PixelHasher;
 import com.github.curiousoddman.curious_images.domain.imports.AddFilesJob;
@@ -37,6 +37,7 @@ import com.github.curiousoddman.curious_images.persistence.FaceRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceThumbnailsRepository;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.persistence.PhotoPreviewRepository;
 import com.github.curiousoddman.curious_images.persistence.PhotoTagRepository;
@@ -52,18 +53,19 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JobFactory {
-    private final DSLContext             dsl;
-    private final ImportRootRepository   importRootRepository;
-    private final FolderRepository    folderRepository;
-    private final MediaRepository     mediaRepository;
-    private final ThumbnailRepository thumbnailRepository;
-    private final PhotoPreviewRepository photoPreviewRepository;
-    private final PhotoMetadataExtractor photoMetadataExtractor;
+    private final DSLContext              dsl;
+    private final ImportRootRepository    importRootRepository;
+    private final FolderRepository        folderRepository;
+    private final MediaRepository         mediaRepository;
+    private final ThumbnailRepository     thumbnailRepository;
+    private final PhotoPreviewRepository  photoPreviewRepository;
+    private final PhotoMetadataExtractor  photoMetadataExtractor;
     private final VideoMetadataExtractor  videoMetadataExtractor;
-    private final ThumbnailGenerator     thumbnailGenerator;
+    private final ThumbnailGenerator      thumbnailGenerator;
     private final VideoThumbnailGenerator videoThumbnailGenerator;
-    private final ImageUtils             imageUtils;
-    private final TimeProvider           timeProvider;
+    private final ImageUtils              imageUtils;
+    private final VideoFrameSampler       videoFrameSampler;
+    private final TimeProvider            timeProvider;
 
     private final MediaHashRepository      photoHashRepository;
     private final DuplicateJobRepository   duplicateJobRepository;
@@ -155,7 +157,10 @@ public class JobFactory {
                 faceThumbnailsRepository,
                 jobManager,
                 imageUtils,
+                videoFrameSampler,
                 aiConfig.isFaceOnly(),
+                aiConfig.getVideoFrameSampleCount(),
+                aiConfig.getVideoFrameSampleIntervalSeconds(),
                 clipTextEncoder,
                 photoTagRepository
         );

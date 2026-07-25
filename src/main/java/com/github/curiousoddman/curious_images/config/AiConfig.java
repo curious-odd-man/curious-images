@@ -115,6 +115,22 @@ public class AiConfig {
      */
     private boolean faceOnly = false;
 
+    /**
+     * How many frames to sample per video for face/CLIP embedding (implementation plan §5).
+     * Frames are spaced evenly across the 10%-90% span of the video's duration (e.g. count=3
+     * gives 10%/50%/90%), then capped by {@link #videoFrameSampleIntervalSeconds} so short videos
+     * don't get needlessly close-together samples.
+     */
+    private int videoFrameSampleCount = 3;
+
+    /**
+     * Minimum spacing, in seconds, between sampled video frames — effectively caps
+     * {@link #videoFrameSampleCount} down for videos too short to fit that many samples this far
+     * apart. E.g. a 4-second video with intervalSeconds=5 samples only 1 frame (the midpoint)
+     * even if videoFrameSampleCount is 3.
+     */
+    private int videoFrameSampleIntervalSeconds = 5;
+
     public enum ExecutionProvider {
         /**
          * Run on CPU only (ONNX Runtime default).

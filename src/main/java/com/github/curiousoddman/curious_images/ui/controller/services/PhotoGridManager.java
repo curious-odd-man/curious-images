@@ -98,7 +98,7 @@ public class PhotoGridManager {
         runOnDaemonThread("LoadAlbum", () -> {
             List<Long> photoIds = albumPhotoRepository.findPhotoIdsByAlbumId(albumId);
             List<MediaPhotoRecord> photos = photoIds.stream()
-                                                    .map(id -> mediaRepository.findPhotoById(id)
+                                                    .map(id -> mediaRepository.findById(id)
                                                                               .orElse(null))
                                                     .filter(Objects::nonNull)
                                                     .toList();

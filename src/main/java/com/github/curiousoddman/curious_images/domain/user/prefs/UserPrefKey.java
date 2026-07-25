@@ -30,7 +30,9 @@ public enum UserPrefKey {
     AI_MIN_EVENT_SIZE("ai.album.min-event-size"),
     AI_MIN_LOCATION_SIZE("ai.album.min-location-size"),
     AI_MIN_CLUSTER_SIZE("ai.album.min-cluster-size"),
-    AI_MIN_CLUSTER_SIMILARITY("ai.album.min-cluster-similarity");
+    AI_MIN_CLUSTER_SIMILARITY("ai.album.min-cluster-similarity"),
+    AI_VIDEO_FRAME_SAMPLE_COUNT("ai.video.frame-sample-count"),
+    AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS("ai.video.frame-sample-interval-seconds");
 
     private final String key;
 }

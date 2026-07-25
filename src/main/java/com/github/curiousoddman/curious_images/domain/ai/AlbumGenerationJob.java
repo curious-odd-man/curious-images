@@ -212,6 +212,17 @@ public class AlbumGenerationJob extends BackgroundJob {
             return;
         }
 
+        // A video can contribute several rows here — one per sampled frame (implementation plan
+        // §5). Similarity-album clustering treats each *media* as one point, so collapse down to
+        // one representative embedding per media id before doing anything else; otherwise the
+        // same video could land in a cluster multiple times over (skewing the centroid) and then
+        // fail to insert into album_photo more than once for the same album.
+        Map<Long, ClipEmbeddingRecord> representativeByMedia = new LinkedHashMap<>();
+        for (ClipEmbeddingRecord rec : all) {
+            representativeByMedia.putIfAbsent(rec.getMediaId(), rec);
+        }
+        all = List.copyOf(representativeByMedia.values());
+
         int total = all.size();
         int k     = Math.max(2, (int) Math.sqrt(total / 2.0));
         log.info("CLIP k-means: {} photos, k={}", total, k);

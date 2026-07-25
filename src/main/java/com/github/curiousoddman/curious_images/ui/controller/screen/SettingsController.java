@@ -74,6 +74,12 @@ public class SettingsController implements Initializable {
     @FXML
     public Spinner<Double>  minClusterSimilaritySpinner;
 
+    // ── Video frame sampling (live) ───────────────────────────────────────────
+    @FXML
+    public Spinner<Integer> videoFrameSampleCountSpinner;
+    @FXML
+    public Spinner<Integer> videoFrameSampleIntervalSpinner;
+
     // ── Storage (restart required) ───────────────────────────────────────────────
     @FXML
     public TextField modelDirField;
@@ -82,7 +88,7 @@ public class SettingsController implements Initializable {
     @FXML
     public TextField thumbnailCacheDirField;
     @FXML
-    public Label      restartNoticeLabel;
+    public Label     restartNoticeLabel;
 
     @FXML
     public VBox root;
@@ -141,6 +147,13 @@ public class SettingsController implements Initializable {
                                            aiSettingsService.setMinClusterSimilarity(isNow.floatValue());
                                        }
                                    });
+
+        // Video frame sampling
+        videoFrameSampleCountSpinner.setValueFactory(intFactory(1, 20, config.getVideoFrameSampleCount()));
+        onIntChange(videoFrameSampleCountSpinner, aiSettingsService::setVideoFrameSampleCount);
+
+        videoFrameSampleIntervalSpinner.setValueFactory(intFactory(1, 300, config.getVideoFrameSampleIntervalSeconds()));
+        onIntChange(videoFrameSampleIntervalSpinner, aiSettingsService::setVideoFrameSampleIntervalSeconds);
 
         // Storage (restart required)
         modelDirField.setText(config.getModelDir()

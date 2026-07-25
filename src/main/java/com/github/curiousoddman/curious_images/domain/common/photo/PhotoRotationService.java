@@ -82,7 +82,7 @@ public class PhotoRotationService {
      *                     these three
      */
     public void rotateAndClearAiResults(long mediaId, int deltaDegrees) {
-        MediaPhotoRecord photo = photoRepo.findPhotoById(mediaId)
+        MediaPhotoRecord photo = photoRepo.findById(mediaId)
                                           .orElse(null);
         if (photo == null) {
             log.warn("rotate: media {} no longer exists", mediaId);
