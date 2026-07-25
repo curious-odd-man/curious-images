@@ -46,6 +46,16 @@ public class SearchService {
     }
 
     /**
+     * Same as {@link #semanticSearch}, but each result also carries which sampled frame matched
+     * best for a video hit (implementation plan §7) — see
+     * {@link ClipVectorIndex#searchWithFrameOffsets} for what a caller can/can't do with that yet.
+     */
+    public List<ClipVectorIndex.ScoredHit> semanticSearchWithFrames(String query, int topK) throws Exception {
+        float[] textEmbedding = clipTextEncoder.encode(query);
+        return clipVectorIndex.searchWithFrameOffsets(textEmbedding, topK);
+    }
+
+    /**
      * Returns up to {@code topK} media IDs visually similar to {@code photoId}, excluding
      * the query media itself.
      */

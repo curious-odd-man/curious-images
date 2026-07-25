@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -113,6 +114,68 @@ public class ClipVectorIndex {
         } finally {
             clipSearcherManager.release(searcher);
         }
+    }
+
+    /**
+     * Same ranking/dedup behavior as {@link #search}, but also returns which frame matched best
+     * for a video hit (implementation plan §7: "showing the best-matching frame as the result's
+     * thumbnail"). {@code frameOffsetMs} is {@code null} for a photo hit or for a video whose
+     * matching row predates frame-level sampling.
+     * <p>
+     * Note: the grid still renders each result via the normal per-media cached thumbnail (from
+     * {@code VideoThumbnailGenerator}, sampled independently of any search), not this specific
+     * frame — actually rendering an arbitrary matched frame as a one-off thumbnail is a separate,
+     * larger UI feature. This method exists so that capability can be added later (e.g. a
+     * "jump to this moment" affordance) without another index-format change.
+     */
+    public List<ScoredHit> searchWithFrameOffsets(float[] queryVec, int k) throws IOException {
+        IndexSearcher searcher = clipSearcherManager.acquire();
+        try {
+            int     overFetch = Math.max(k * 4, k + 20);
+            TopDocs hits      = searcher.search(new KnnFloatVectorQuery("clip_vec", queryVec, overFetch), overFetch);
+
+            LinkedHashSet<Long> seenMediaIds = new LinkedHashSet<>(k * 2);
+            List<ScoredHit>     results      = new ArrayList<>(k);
+            for (ScoreDoc scoreDoc : hits.scoreDocs) {
+                if (results.size() >= k) {
+                    break;
+                }
+                var storedDoc = searcher.storedFields()
+                                        .document(scoreDoc.doc);
+                long mediaId = Long.parseLong(storedDoc.get("photo_id"));
+                if (!seenMediaIds.add(mediaId)) {
+                    continue; // a later (lower-scoring) hit for a media already captured — skip
+                }
+                String rowId         = storedDoc.get("row_id");
+                Long   frameOffsetMs = frameOffsetFromRowKey(rowId);
+                results.add(new ScoredHit(mediaId, frameOffsetMs, scoreDoc.score));
+            }
+            return results;
+        } finally {
+            clipSearcherManager.release(searcher);
+        }
+    }
+
+    private static Long frameOffsetFromRowKey(String rowId) {
+        if (rowId == null) {
+            return null;
+        }
+        int colon = rowId.indexOf(':');
+        if (colon < 0) {
+            return null;
+        }
+        String suffix = rowId.substring(colon + 1);
+        if ("single".equals(suffix)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(suffix);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public record ScoredHit(long mediaId, Long frameOffsetMs, float score) {
     }
 
     private static String rowKey(long mediaId, Long frameOffsetMs) {

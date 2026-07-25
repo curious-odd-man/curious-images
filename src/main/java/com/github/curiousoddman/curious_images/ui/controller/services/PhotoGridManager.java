@@ -1,6 +1,5 @@
 package com.github.curiousoddman.curious_images.ui.controller.services;
 
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaTagRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.TagEmbeddingRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ThumbnailRecord;
@@ -86,10 +85,8 @@ public class PhotoGridManager {
     public void loadPhotosUndated() {
         long myGeneration = gridController.initiateChange();
         runOnDaemonThread("LoadUndated", () -> {
-            List<MediaPhotoRecord> photos = mediaRepository.findByNullCaptureDate();
-            loadSelectionResult(myGeneration, photos.stream()
-                                                    .map(Media::photo)
-                                                    .toList());
+            List<Media> photos = mediaRepository.findMediaByNullCaptureDate();
+            loadSelectionResult(myGeneration, photos);
         });
     }
 
@@ -97,14 +94,11 @@ public class PhotoGridManager {
         long myGeneration = gridController.initiateChange();
         runOnDaemonThread("LoadAlbum", () -> {
             List<Long> photoIds = albumPhotoRepository.findPhotoIdsByAlbumId(albumId);
-            List<MediaPhotoRecord> photos = photoIds.stream()
-                                                    .map(id -> mediaRepository.findById(id)
-                                                                              .orElse(null))
-                                                    .filter(Objects::nonNull)
-                                                    .toList();
-            loadSelectionResult(myGeneration, photos.stream()
-                                                    .map(Media::photo)
-                                                    .toList());
+            List<Media> photos = photoIds.stream()
+                                         .map(mediaRepository::findMediaById)
+                                         .filter(Objects::nonNull)
+                                         .toList();
+            loadSelectionResult(myGeneration, photos);
         });
     }
 

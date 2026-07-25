@@ -9,7 +9,7 @@
 | 3. Hover-preview playback                                                             | 🟢 Completed  |
 | 4. Duplicate detection (file-hash, `media_hash`)                                      | 🟢 Completed  |
 | 5. AI pipeline (frame sampling + face/CLIP + clustering)                              | 🟢 Completed  |
-| 6. Albums + unified search, `MediaItem` abstraction                                   | ⬜ Not started |
+| 6. Albums + unified search, `MediaItem` abstraction                                   | 🟢 Completed  |
 
 ## Phase 2 — what landed
 
@@ -101,8 +101,50 @@
 - Generalized `FaceClipProcessingFailed` from `MediaPhotoRecord` to `Media` so a video's
   processing failures surface correctly too.
 
+## Phase 6 — what landed
+
+- **Event/location albums now include videos.** Found and fixed a real pre-existing bug in the
+  process: `MediaRepository.findOrderedByCaptureDate`/`findAllWithGps` queried the shared `MEDIA`
+  table directly but force-mapped every row into a `MediaPhotoRecord` via jOOQ's `fetchInto` —
+  this didn't throw (jOOQ just leaves unmatched POJO fields null), but silently mislabeled every
+  video row as a photo and dropped genuine photo-specific columns too. Both now return properly
+  merged `List<Media>`, and `AlbumGenerationJob`'s event/location clustering works on `Media`
+  throughout.
+- **Person pages now render mixed photo+video grids.** `PersonDetailController` generalized from
+  `MediaPhotoRecord` to `Media` end-to-end (photo lookup, year-grouping, age-album tree, date
+  comparator). This also fixed a latent compile bug from Phase 2: `onAgeAlbumSelected` was still
+  passing `List<MediaPhotoRecord>` into `PhotoGridManager.createData`, which Phase 2 had already
+  changed to take `List<Media>` — this code path would not have compiled until now.
+- **Album/undated browse pages now render mixed grids.** `PhotoGridManager.loadPhotosForAlbum`
+  and `loadPhotosUndated` switched from the photo-only `findById`/`findByNullCaptureDate` to the
+  generic `findMediaById`/new `findMediaByNullCaptureDate`, consistent with folder/timeline
+  browsing (already mixed since Phase 2).
+- **Person albums and similarity albums already included videos with zero changes needed** —
+  audited `PersonService.getPersonPhotoIds` (already keyed by `FaceRecord.getMediaId()`, type
+  agnostic) and confirmed the Phase 5 similarity-album dedup fix already covers it.
+- **Unified search**: `@person`/`#tag` filters were already type-agnostic (keyed by media id
+  through `FACE`/`MEDIA_TAG`), and Phase 5's `ClipVectorIndex` rework already made semantic search
+  span photos and videos with multi-frame-hit collapsing. Added
+  `ClipVectorIndex.searchWithFrameOffsets`/`SearchService.semanticSearchWithFrames` so a hit's
+  best-matching frame offset is available — not yet wired into the grid as a custom per-result
+  thumbnail (that's a separate, larger UI feature: rendering one arbitrary frame bypassing the
+  normal per-media thumbnail cache), but the data is there for a future "jump to this moment"
+  affordance without another index-format change.
+- **`MediaItem` abstraction**: already satisfied by the existing `Media` class (an `Either`-backed
+  photo/video union with `isPhoto()`/`isVideo()` and generic accessors), which grid, album,
+  search, dedupe, and AI-pipeline code already use uniformly — no parallel `PhotoItem`/`VideoItem`
+  type was introduced, since one already existed doing this job since Phase 2. Documented this
+  directly on the class.
+
+## Status: all 6 phases of the original plan are now implemented.
+
 ## Open items still worth a decision before/while coding
 
+- **Best-matching-frame thumbnail for video search results** (search polish, phase 6 follow-up) —
+  `ClipVectorIndex.searchWithFrameOffsets` now surfaces which frame matched, but the grid still
+  shows each video's normal cached thumbnail rather than that specific frame; rendering an
+  arbitrary matched frame one-off would need a parallel image-loading path bypassing the per-media
+  thumbnail cache.
 - **`hash_type` on `media_hash`** (dedupe, phase 4) — confirms photos and videos are never
   cross-compared for duplicates; worth double-checking this matches expectations before
   implementation.

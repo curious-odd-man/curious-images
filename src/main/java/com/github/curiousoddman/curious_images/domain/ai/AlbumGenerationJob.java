@@ -2,10 +2,10 @@ package com.github.curiousoddman.curious_images.domain.ai;
 
 import com.github.curiousoddman.curious_images.config.AiConfig;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ClipEmbeddingRecord;
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.PersonRecord;
 import com.github.curiousoddman.curious_images.domain.common.thumbnail.PersonService;
 import com.github.curiousoddman.curious_images.event.model.AiPipelineCompleteEvent;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.persistence.AlbumPhotoRepository;
 import com.github.curiousoddman.curious_images.persistence.AlbumRepository;
 import com.github.curiousoddman.curious_images.persistence.ClipEmbeddingRepository;
@@ -99,21 +99,21 @@ public class AlbumGenerationJob extends BackgroundJob {
     // ── Event albums ──────────────────────────────────────────────────────────
 
     private void buildEventAlbums() {
-        List<MediaPhotoRecord> dated = mediaRepository.findOrderedByCaptureDate();
+        List<Media> dated = mediaRepository.findOrderedByCaptureDate();
         if (dated.isEmpty()) {
             return;
         }
 
-        long                         gapMillis = TimeUnit.HOURS.toMillis(aiConfig.getEventGapHours());
-        List<List<MediaPhotoRecord>> events    = new ArrayList<>();
-        List<MediaPhotoRecord>       current   = new ArrayList<>();
+        long              gapMillis = TimeUnit.HOURS.toMillis(aiConfig.getEventGapHours());
+        List<List<Media>> events    = new ArrayList<>();
+        List<Media>       current   = new ArrayList<>();
         current.add(dated.getFirst());
 
         publishProgressThrottled("Build Event Albums", 0, dated.size(), "", false);
 
         for (int i = 1; i < dated.size(); i++) {
-            MediaPhotoRecord prev = dated.get(i - 1);
-            MediaPhotoRecord next = dated.get(i);
+            Media prev = dated.get(i - 1);
+            Media next = dated.get(i);
             long gap = Duration.between(prev.getCaptureDate(), next.getCaptureDate())
                                .toMillis();
             if (gap > gapMillis) {
@@ -133,7 +133,7 @@ public class AlbumGenerationJob extends BackgroundJob {
             for (int j = 0; j < events.size(); j++) {
                 publishProgressThrottled("Build Event Albums", j + dated.size(), dated.size() + events.size(), "", false);
 
-                List<MediaPhotoRecord> eventPhotos = events.get(j);
+                List<Media> eventPhotos = events.get(j);
                 if (eventPhotos.size() < aiConfig.getMinEventSize()) {
                     continue;
                 }
@@ -160,19 +160,19 @@ public class AlbumGenerationJob extends BackgroundJob {
      */
     private void buildLocationAlbums() {
         publishProgressThrottled("Build Location Albums", 0, 1, "", false);
-        List<MediaPhotoRecord> withGps = mediaRepository.findAllWithGps();
+        List<Media> withGps = mediaRepository.findAllWithGps();
         if (withGps.isEmpty()) {
             return;
         }
 
-        Map<String, List<MediaPhotoRecord>> cells = new LinkedHashMap<>();
+        Map<String, List<Media>> cells = new LinkedHashMap<>();
         for (int i = 0; i < withGps.size(); i++) {
             publishProgressThrottled("Build Event Albums", i, withGps.size() + cells.size(), "", false);
 
-            MediaPhotoRecord p   = withGps.get(i);
-            double           lat = Math.round(p.getGpsLat() * 100.0) / 100.0;
-            double           lon = Math.round(p.getGpsLon() * 100.0) / 100.0;
-            String           key = lat + "," + lon;
+            Media  p   = withGps.get(i);
+            double lat = Math.round(p.getGpsLat() * 100.0) / 100.0;
+            double lon = Math.round(p.getGpsLon() * 100.0) / 100.0;
+            String key = lat + "," + lon;
             cells.computeIfAbsent(key, k -> new ArrayList<>())
                  .add(p);
         }
@@ -183,10 +183,10 @@ public class AlbumGenerationJob extends BackgroundJob {
             LocalDateTime now = timeProvider.now();
 
             int i = 0;
-            for (Map.Entry<String, List<MediaPhotoRecord>> entry : cells.entrySet()) {
+            for (Map.Entry<String, List<Media>> entry : cells.entrySet()) {
                 i++;
                 publishProgressThrottled("Build Event Albums", withGps.size() + i, withGps.size() + cells.size(), "", false);
-                List<MediaPhotoRecord> group = entry.getValue();
+                List<Media> group = entry.getValue();
                 if (group.size() < aiConfig.getMinLocationSize()) {
                     continue;
                 }
@@ -303,7 +303,7 @@ public class AlbumGenerationJob extends BackgroundJob {
         return "Album generation";
     }
 
-    private void prepareAndExecuteBatch(DSLContext ctx, LocalDateTime now, List<MediaPhotoRecord> event, long albumId) {
+    private void prepareAndExecuteBatch(DSLContext ctx, LocalDateTime now, List<Media> event, long albumId) {
         List<Query> buf = new ArrayList<>(event.size());
         for (int i = 0; i < event.size(); i++) {
             buf.add(albumPhotoRepo.insertQuery(albumId, event.get(i)

@@ -341,6 +341,30 @@ public class MediaRepository {
                 .fetchInto(MediaPhotoRecord.class);
     }
 
+    /**
+     * Mixed photo+video lookup for the "undated" browse view — kept consistent with
+     * {@link #findMediaByFolderId} and {@link #findByCaptureDate}, which already show mixed
+     * media (implementation plan §8: "render mixed photo+video grids" applies just as much to
+     * this view as to folders/timeline/albums/person pages). In practice a video's capture date
+     * is rarely null (falls back to filesystem mtime, same as a photo without EXIF), but nothing
+     * guarantees that.
+     */
+    public List<Media> findMediaByNullCaptureDate() {
+        Result<MediaPhotoRecord> photo = selectPhotoMedia()
+                .where(MEDIA_PHOTO.CAPTURE_DATE.isNull())
+                .fetch();
+        Result<MediaVideoRecord> video = selectVideoMedia()
+                .where(MEDIA_VIDEO.CAPTURE_DATE.isNull())
+                .fetch();
+        return Stream.concat(
+                             photo.stream()
+                                  .map(Media::photo),
+                             video.stream()
+                                  .map(Media::video))
+                     .sorted(Comparator.comparing(Media::getFilename, Comparator.nullsLast(Comparator.naturalOrder())))
+                     .toList();
+    }
+
     public Optional<MediaPhotoRecord> findById(long mediaId) {
         return Optional.ofNullable(
                 selectPhotoMedia()
@@ -448,18 +472,55 @@ public class MediaRepository {
                 .where(MEDIA.ID.eq(mediaId));
     }
 
-    public List<MediaPhotoRecord> findOrderedByCaptureDate() {
-        return dsl.selectFrom(MEDIA)
-                  .where(MEDIA.CAPTURE_DATE.isNotNull())
-                  .orderBy(MEDIA.CAPTURE_DATE)
-                  .fetchInto(MediaPhotoRecord.class);
+    /**
+     * Mixed photo+video, ordered by capture date — used by event-album generation
+     * (implementation plan §6/§8, "Albums... tying videos into existing album UI").
+     * <p>
+     * Previously this queried the shared {@code MEDIA} table directly and force-mapped every row
+     * into a {@code MediaPhotoRecord} via jOOQ's {@code fetchInto} — which happened to not throw
+     * (extra POJO fields with no matching column are just left null/default), but silently
+     * mislabeled every video row as a photo and dropped photo-specific columns that do exist
+     * (orientation, camera make/model) for genuine photos too, since {@code MEDIA} alone doesn't
+     * have them. Properly typed now via the same photo/video merge pattern as
+     * {@link #findMediaByFolderId}.
+     */
+    public List<Media> findOrderedByCaptureDate() {
+        Result<MediaPhotoRecord> photo = selectPhotoMedia()
+                .where(MEDIA_PHOTO.CAPTURE_DATE.isNotNull())
+                .fetch();
+        Result<MediaVideoRecord> video = selectVideoMedia()
+                .where(MEDIA_VIDEO.CAPTURE_DATE.isNotNull())
+                .fetch();
+        return Stream.concat(
+                             photo.stream()
+                                  .map(Media::photo),
+                             video.stream()
+                                  .map(Media::video))
+                     .sorted(Comparator.comparing(Media::getCaptureDate))
+                     .toList();
     }
 
-    public List<MediaPhotoRecord> findAllWithGps() {
-        return dsl.selectFrom(MEDIA)
-                  .where(MEDIA.GPS_LAT.isNotNull()
-                                      .and(MEDIA.GPS_LON.isNotNull()))
-                  .fetchInto(MediaPhotoRecord.class);
+    /**
+     * Mixed photo+video with GPS coordinates — used by location-album generation. See
+     * {@link #findOrderedByCaptureDate} for why this replaced a {@code fetchInto(MediaPhotoRecord)}
+     * hack that silently mislabeled videos.
+     */
+    public List<Media> findAllWithGps() {
+        Result<MediaPhotoRecord> photo = selectPhotoMedia()
+                .where(MEDIA_PHOTO.GPS_LAT.isNotNull()
+                                          .and(MEDIA_PHOTO.GPS_LON.isNotNull()))
+                .fetch();
+        Result<MediaVideoRecord> video = selectVideoMedia()
+                .where(MEDIA_VIDEO.GPS_LAT.isNotNull()
+                                          .and(MEDIA_VIDEO.GPS_LON.isNotNull()))
+                .fetch();
+        return Stream.concat(
+                             photo.stream()
+                                  .map(Media::photo),
+                             video.stream()
+                                  .map(Media::video)
+                     )
+                     .toList();
     }
 
     public List<Long> findPendingAiTagging() {

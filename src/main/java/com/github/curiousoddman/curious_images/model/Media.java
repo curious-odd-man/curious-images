@@ -9,6 +9,15 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * A single library item that's either a photo or a video, backed by whichever subtype row
+ * actually exists for it ({@code PHOTO} or {@code VIDEO}, joined via the shared {@code MEDIA}
+ * table). This is the {@code MediaItem} sealed-interface abstraction called for in the
+ * implementation plan §9 — grid, album, search, and person-page code already branch on
+ * {@link #isPhoto()}/{@link #isVideo()} (or use the generic accessors below) instead of
+ * duplicating parallel code paths per type, so no separate {@code PhotoItem}/{@code VideoItem}
+ * type was introduced alongside it.
+ */
 @RequiredArgsConstructor
 public class Media implements Either<MediaPhotoRecord, MediaVideoRecord> {
     private final Either<MediaPhotoRecord, MediaVideoRecord> either;
