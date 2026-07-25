@@ -11,8 +11,6 @@ public class Main {
     // TODO: engagement features - rank, order and plan - see doc
     // TODO: metadata editing (DB only with "changed" flag for later dump to files if necessary)
     // TODO: Selections/collections/albums whatever - integrate media-shoot-magic here
-    // TODO: Scan and add video
-    // TODO: user friendly configuration (paths, cuda vs cpu, AI features...)
     // TODO: AI models eviction - no need to store those in memory all the time.
     public static void main(String[] args) {
         LauncherImpl.launchApplication(JavafxApplication.class, AnimatedPreloader.class, args);

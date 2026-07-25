@@ -51,8 +51,8 @@ public class DuplicateGroupRepository {
     public void insertMembers(DSLContext ctx, long groupId, List<Long> mediaIds) {
         InsertValuesStep2<DuplicateGroupMemberRecord, Long, Long> step = ctx.insertInto(DUPLICATE_GROUP_MEMBER,
                 DUPLICATE_GROUP_MEMBER.DUPLICATE_GROUP_ID, DUPLICATE_GROUP_MEMBER.MEDIA_ID);
-        for (Long photoId : mediaIds) {
-            step = step.values(groupId, photoId);
+        for (Long mediaId : mediaIds) {
+            step = step.values(groupId, mediaId);
         }
         step.execute();
     }

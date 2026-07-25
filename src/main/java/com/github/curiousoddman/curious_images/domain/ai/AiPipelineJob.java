@@ -47,9 +47,8 @@ import static com.github.curiousoddman.curious_images.util.QueryBuffer.DB_FLUSH_
 @Slf4j
 @RequiredArgsConstructor
 public class AiPipelineJob extends BackgroundJob {
-    public static final  String AI_PIPELINE                   = "AI Pipeline";
-    private static final float  TAGGING_SIMILARITY_THREASHOLD = 0.8f;       // TODO: this is configurable option for a user
-    private static final int    TAGGING_KTOP                  = 5;
+    public static final  String AI_PIPELINE  = "AI Pipeline";
+    private static final int    TAGGING_KTOP = 5;
 
     private static final String ARCFACE_MODEL_VER    = "arcface_r50";
     private static final String CLIP_IMAGE_MODEL_VER = "clip_vit_b32";
