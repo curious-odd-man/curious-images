@@ -1,6 +1,6 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
-import com.github.curiousoddman.curious_images.domain.imports.ImportFailureDetail;
+import com.github.curiousoddman.curious_images.domain.imports.ImportFileIssue;
 import com.github.curiousoddman.curious_images.event.model.ImportStatsUpdatedEvent;
 import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
@@ -32,10 +32,14 @@ import static com.github.curiousoddman.curious_images.util.async.ThreadUtils.run
 import static com.sun.javafx.util.Utils.runOnFxThread;
 
 /**
- * Shows the "Last Import" stats — persisted single-row snapshot of the most recent import job,
- * kept live while a job is running (see {@code ImportJob}/{@code ImportStatsTracker} and
- * {@link ImportStatsUpdatedEvent}). Selected from the tree via the always-present IMPORT_STATS
- * node sitting alongside the IMPORT_ROOT entries under Folders (see {@code TreeManager}).
+ * Shows the "Last Import" stats — the most recent {@code IMPORT_JOB_STATS} row (every run gets
+ * its own id — real history — see {@code ImportJobStatsRepository}), kept live while a job is
+ * running (see {@code ImportJob}/{@code ImportStatsTracker} and {@link ImportStatsUpdatedEvent}).
+ * Selected from the tree via the always-present IMPORT_STATS node sitting alongside the
+ * IMPORT_ROOT entries under Folders (see {@code TreeManager}).
+ * <p>
+ * Skipped (unsupported codec/extension only — not routine "unchanged" skips) and failed files are
+ * shown as two separate sections, each grouped by reason — see {@link #renderIssueSection}.
  */
 @Lazy
 @Slf4j
@@ -47,9 +51,9 @@ public class ImportStatsController implements Initializable {
     private final ImportJobStatsRepository importJobStatsRepository;
 
     @FXML
-    public VBox   emptyState;
+    public VBox emptyState;
     @FXML
-    public VBox   statsContent;
+    public VBox statsContent;
 
     @FXML
     public Label jobTypeLabel;
@@ -79,11 +83,16 @@ public class ImportStatsController implements Initializable {
     public Label unsupportedCodecLabel;
     @FXML
     public Label unsupportedExtensionLabel;
-    @FXML
-    public Label failedCountLabel;
 
     @FXML
-    public Accordion failuresAccordion;
+    public Label     skippedIssueCountLabel;
+    @FXML
+    public Accordion skippedAccordion;
+
+    @FXML
+    public Label     failedCountLabel;
+    @FXML
+    public Accordion failedAccordion;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -99,15 +108,15 @@ public class ImportStatsController implements Initializable {
     public void refresh() {
         runOnDaemonThread("LoadImportStats", () -> {
             ImportJobStats stats = importJobStatsRepository.findLast()
-                                                            .orElse(null);
+                                                           .orElse(null);
             runOnFxThread(() -> render(stats));
         });
     }
 
     /**
-     * Live updates while a job is running — cheap enough (a handful of labels + rebuilding the
-     * failures accordion) to just always apply, whether or not this view happens to be the one
-     * currently showing; next time it's shown it'll already be current.
+     * Live updates while a job is running — cheap enough (a handful of labels + rebuilding the two
+     * accordions) to just always apply, whether or not this view happens to be the one currently
+     * showing; next time it's shown it'll already be current.
      */
     @EventListener
     public void onImportStatsUpdated(ImportStatsUpdatedEvent event) {
@@ -152,16 +161,24 @@ public class ImportStatsController implements Initializable {
         skippedUnchangedLabel.setText(String.valueOf(stats.skippedUnchangedCount()));
         unsupportedCodecLabel.setText(String.valueOf(stats.unsupportedCodecCount()));
         unsupportedExtensionLabel.setText(String.valueOf(stats.unsupportedExtensionCount()));
+
+        skippedIssueCountLabel.setText(String.valueOf(stats.skippedIssueCount()));
         failedCountLabel.setText(String.valueOf(stats.failedCount()));
 
-        renderFailures(stats.failures());
+        renderIssueSection(stats.skippedIssues(), skippedAccordion);
+        renderIssueSection(stats.failedIssues(), failedAccordion);
     }
 
-    private void renderFailures(List<ImportFailureDetail> failures) {
+    /**
+     * Groups a list of same-type issues by {@link ImportFileIssue#reason()} and renders one
+     * {@code TitledPane} per reason, each containing a {@code ListView} of the individual file
+     * paths — used identically for both the Skipped and Failed sections.
+     */
+    private void renderIssueSection(List<ImportFileIssue> issues, Accordion accordion) {
         Map<String, List<String>> byReason = new LinkedHashMap<>();
-        for (ImportFailureDetail failure : failures) {
-            byReason.computeIfAbsent(failure.reason(), r -> new ArrayList<>())
-                    .add(failure.absolutePath());
+        for (ImportFileIssue issue : issues) {
+            byReason.computeIfAbsent(issue.reason(), r -> new ArrayList<>())
+                    .add(issue.absolutePath());
         }
 
         List<TitledPane> panes = new ArrayList<>();
@@ -176,15 +193,15 @@ public class ImportStatsController implements Initializable {
                                                                           .size() + ")", pathsList);
             panes.add(pane);
         }
-        failuresAccordion.getPanes()
-                         .setAll(panes);
+        accordion.getPanes()
+                 .setAll(panes);
     }
 
     private String formatDuration(Duration duration) {
         long totalSeconds = Math.max(0, duration.toSeconds());
-        long hours   = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
+        long hours        = totalSeconds / 3600;
+        long minutes      = (totalSeconds % 3600) / 60;
+        long seconds      = totalSeconds % 60;
         if (hours > 0) {
             return "%dh %dm %ds".formatted(hours, minutes, seconds);
         }

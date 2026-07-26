@@ -15,6 +15,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Face;
 import com.github.curiousoddman.curious_images.dbobj.tables.FaceEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.FlywaySchemaHistory;
 import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
+import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
@@ -118,6 +119,11 @@ public class Public extends SchemaImpl {
     public final Folder FOLDER = Folder.FOLDER;
 
     /**
+     * The table <code>public.IMPORT_JOB_FILE_ISSUE</code>.
+     */
+    public final ImportJobFileIssue IMPORT_JOB_FILE_ISSUE = ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE;
+
+    /**
      * The table <code>public.IMPORT_JOB_STATS</code>.
      */
     public final ImportJobStats IMPORT_JOB_STATS = ImportJobStats.IMPORT_JOB_STATS;
@@ -219,6 +225,7 @@ public class Public extends SchemaImpl {
             FaceEmbedding.FACE_EMBEDDING,
             FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY,
             Folder.FOLDER,
+            ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE,
             ImportJobStats.IMPORT_JOB_STATS,
             ImportRoot.IMPORT_ROOT,
             Media.MEDIA,

@@ -6,9 +6,10 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 @RequiredArgsConstructor
 public class FileCollectingVisitor extends SimpleFileVisitor<Path> {
@@ -18,9 +19,10 @@ public class FileCollectingVisitor extends SimpleFileVisitor<Path> {
     /**
      * Regular files visited whose extension isn't in {@code supportedExtensions} — i.e. never
      * even attempted as a photo/video. Read by {@code ImportJob} after the walk completes to
-     * populate the "unsupported extension" counter in the Last Import stats view.
+     * both populate the "unsupported extension" counter and record a per-file SKIPPED issue for
+     * each one (see {@code ImportStatsTracker#recordUnsupportedExtension}) in the Last Import view.
      */
-    private final AtomicLong unsupportedExtensionCount = new AtomicLong();
+    private final List<Path> unsupportedExtensionFiles = Collections.synchronizedList(new ArrayList<>());
 
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
@@ -29,13 +31,13 @@ public class FileCollectingVisitor extends SimpleFileVisitor<Path> {
                                                                        .toString()))) {
                 found.add(file);
             } else {
-                unsupportedExtensionCount.incrementAndGet();
+                unsupportedExtensionFiles.add(file);
             }
         }
         return FileVisitResult.CONTINUE;
     }
 
-    public long getUnsupportedExtensionCount() {
-        return unsupportedExtensionCount.get();
+    public List<Path> getUnsupportedExtensionFiles() {
+        return unsupportedExtensionFiles;
     }
 }

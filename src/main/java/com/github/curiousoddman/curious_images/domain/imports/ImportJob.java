@@ -103,20 +103,25 @@ public class ImportJob extends BackgroundJob {
     // ── Stats session (see ImportStatsTracker) ─────────────────────────────────
 
     /**
-     * Starts a new stats-tracking session for one whole job run. Called by {@link #runImpl()}
-     * itself for a plain rescan, or by {@code AddFilesJob} before it drives
+     * Starts a new stats-tracking session for one whole job run: inserts a fresh
+     * {@code IMPORT_JOB_STATS} row (real per-run history — every run gets its own id) and
+     * remembers the generated id on the tracker so later updates target it. Called by
+     * {@link #runImpl()} itself for a plain rescan, or by {@code AddFilesJob} before it drives
      * {@link #runImportInternal} directly for each of its (possibly copied-to) roots.
      */
     void beginStatsSession(ImportJobType jobType, List<String> effectiveRootPaths) {
         sessionHadRootLevelFailure = false;
         statsTracker = new ImportStatsTracker(jobType, effectiveRootPaths, timeProvider);
         lastStatsPublishMs = 0;
-        persistAndPublishStats(JobStatus.RUNNING);
+        long runId = importJobStatsRepository.insertStarted(statsTracker.snapshot(JobStatus.RUNNING));
+        statsTracker.setRunId(runId);
+        eventPublisher.publishEvent(new ImportStatsUpdatedEvent(this, statsTracker.snapshot(JobStatus.RUNNING)));
     }
 
     /**
-     * Ends the current stats-tracking session: persists and publishes the final snapshot, then
-     * clears the tracker so a stale one can't leak into the next run.
+     * Ends the current stats-tracking session: persists and publishes the final snapshot, bulk
+     * inserts every collected {@link ImportFileIssue} keyed to this run's id, then clears the
+     * tracker so a stale one can't leak into the next run.
      */
     void finishStatsSession(boolean interrupted) {
         if (statsTracker == null) {
@@ -125,7 +130,10 @@ public class ImportJob extends BackgroundJob {
         JobStatus finalStatus = interrupted
                 ? JobStatus.INTERRUPTED
                 : (sessionHadRootLevelFailure ? JobStatus.FAILED : JobStatus.COMPLETED);
-        persistAndPublishStats(finalStatus);
+        ImportJobStats snapshot = statsTracker.snapshot(finalStatus);
+        importJobStatsRepository.updateProgress(snapshot.id(), snapshot);
+        importJobStatsRepository.insertIssues(snapshot.id(), snapshot.issues());
+        eventPublisher.publishEvent(new ImportStatsUpdatedEvent(this, snapshot));
         statsTracker = null;
     }
 
@@ -134,7 +142,7 @@ public class ImportJob extends BackgroundJob {
             return;
         }
         ImportJobStats snapshot = statsTracker.snapshot(status);
-        importJobStatsRepository.upsert(snapshot);
+        importJobStatsRepository.updateProgress(snapshot.id(), snapshot);
         eventPublisher.publishEvent(new ImportStatsUpdatedEvent(this, snapshot));
     }
 
@@ -167,7 +175,12 @@ public class ImportJob extends BackgroundJob {
             ScanResult scanResult = scan(rootPath);
             List<Path> files      = scanResult.files();
             if (statsTracker != null) {
-                statsTracker.recordUnsupportedExtension(scanResult.unsupportedExtensionCount());
+                for (Path unsupported : scanResult.unsupportedExtensionFiles()) {
+                    String extension = FileUtils.extensionOf(unsupported.getFileName()
+                                                                        .toString());
+                    statsTracker.recordUnsupportedExtension(unsupported.toString(),
+                            "Unsupported extension: ." + extension);
+                }
             }
             log.info("Discovered {} supported files under {}", files.size(), rootPathString);
             publishInProgress("Reading files", 0, files.size());
@@ -187,15 +200,15 @@ public class ImportJob extends BackgroundJob {
                     switch (result.outcome()) {
                         case SKIPPED_UNCHANGED -> {
                             skipped++;
-                            recordOutcome(result);
+                            recordOutcome(result, file);
                         }
                         case REJECTED_UNSUPPORTED_CODEC -> {
                             rejectedCodec++;
-                            recordOutcome(result);
+                            recordOutcome(result, file);
                         }
                         default -> {
                             imported++;
-                            recordOutcome(result);
+                            recordOutcome(result, file);
                         }
                     }
                 } catch (Exception e) {
@@ -230,13 +243,14 @@ public class ImportJob extends BackgroundJob {
         }
     }
 
-    private void recordOutcome(FileImportResult result) {
+    private void recordOutcome(FileImportResult result, Path file) {
         if (statsTracker == null) {
             return;
         }
         switch (result.outcome()) {
             case SKIPPED_UNCHANGED -> statsTracker.recordSkippedUnchanged();
-            case REJECTED_UNSUPPORTED_CODEC -> statsTracker.recordUnsupportedCodec();
+            case REJECTED_UNSUPPORTED_CODEC -> statsTracker.recordUnsupportedCodec(file.toString(),
+                    result.reason() != null ? result.reason() : "Unsupported codec");
             case IMPORTED -> {
                 if (result.video()) {
                     statsTracker.recordVideoImported(result.fileSize());
@@ -258,8 +272,8 @@ public class ImportJob extends BackgroundJob {
 
     private FileImportResult importOneFile(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
                                            Path file, List<Query> buffer) throws IOException {
-        String filename = file.getFileName()
-                              .toString();
+        String filename  = file.getFileName()
+                               .toString();
         String extension = FileUtils.extensionOf(filename);
 
         if (VIDEO_EXTENSIONS.contains(extension)) {
@@ -285,7 +299,7 @@ public class ImportJob extends BackgroundJob {
             // partial AI progress from a previous run is preserved.
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
                                                                     .id(), now));
-            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, false, fileSize);
+            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, false, fileSize, null);
         }
 
         ExtractedMetadata metadata = metadataExtractor.extract(file, extension);
@@ -301,7 +315,7 @@ public class ImportJob extends BackgroundJob {
                     metadata.exifExtraJson(), now));
             queuePreview(photoId, metadata, buffer);
             buffer.add(mediaRepository.resetAiFields(photoId));
-            return new FileImportResult(ImportOutcome.UPDATED, false, fileSize);
+            return new FileImportResult(ImportOutcome.UPDATED, false, fileSize, null);
         }
 
         // Brand-new media: insert returns the generated ID immediately.
@@ -312,7 +326,7 @@ public class ImportJob extends BackgroundJob {
                 metadata.cameraModel(), metadata.lensModel(),
                 metadata.exifExtraJson(), now);
         queuePreview(photoId, metadata, buffer);
-        return new FileImportResult(ImportOutcome.IMPORTED, false, fileSize);
+        return new FileImportResult(ImportOutcome.IMPORTED, false, fileSize, null);
     }
 
     /**
@@ -336,16 +350,17 @@ public class ImportJob extends BackgroundJob {
                                             .fileSize() == fileSize) {
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
                                                                     .id(), now));
-            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, true, fileSize);
+            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, true, fileSize, null);
         }
 
         ExtractedVideoMetadata metadata;
         try {
             metadata = videoMetadataExtractor.extract(file);
         } catch (UnsupportedVideoCodecException e) {
-            // Reported in the ENDED summary's "unsupported codec" count — see runImportInternal.
+            // Reported in the ENDED summary's "unsupported codec" count, and as a per-file SKIPPED
+            // issue with this exact reason — see recordOutcome.
             log.warn("Skipping unsupported video codec: {}", e.getMessage());
-            return new FileImportResult(ImportOutcome.REJECTED_UNSUPPORTED_CODEC, true, fileSize);
+            return new FileImportResult(ImportOutcome.REJECTED_UNSUPPORTED_CODEC, true, fileSize, e.getMessage());
         }
 
         if (existing.isPresent()) {
@@ -357,7 +372,7 @@ public class ImportJob extends BackgroundJob {
                     metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
                     metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now));
             buffer.add(mediaRepository.resetAiFields(videoId));
-            return new FileImportResult(ImportOutcome.UPDATED, true, fileSize);
+            return new FileImportResult(ImportOutcome.UPDATED, true, fileSize, null);
         }
 
         mediaRepository.insertVideo(folderId, absolutePath, filename, extension, fileSize,
@@ -365,7 +380,7 @@ public class ImportJob extends BackgroundJob {
                 metadata.captureDate(), metadata.captureDateSource(),
                 metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
                 metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now);
-        return new FileImportResult(ImportOutcome.IMPORTED, true, fileSize);
+        return new FileImportResult(ImportOutcome.IMPORTED, true, fileSize, null);
     }
 
     /**
@@ -418,10 +433,10 @@ public class ImportJob extends BackgroundJob {
     }
 
     private ScanResult scan(Path rootPath) throws IOException {
-        List<Path>            found   = new ArrayList<>(APPROXIMATE_LIBRARY_SIZE);
-        FileCollectingVisitor visitor = new FileCollectingVisitor(SUPPORTED_EXTENSIONS, found);
+        List<Path>            found    = new ArrayList<>(APPROXIMATE_LIBRARY_SIZE);
+        FileCollectingVisitor visitor  = new FileCollectingVisitor(SUPPORTED_EXTENSIONS, found);
         Files.walkFileTree(rootPath, visitor);
-        return new ScanResult(found, visitor.getUnsupportedExtensionCount());
+        return new ScanResult(found, visitor.getUnsupportedExtensionFiles());
     }
 
     @Override
@@ -431,9 +446,10 @@ public class ImportJob extends BackgroundJob {
 
     /**
      * One file's import result, carrying just enough beyond {@link ImportOutcome} for
-     * {@link #recordOutcome} to feed the right counters on {@link ImportStatsTracker}.
+     * {@link #recordOutcome} to feed the right counters/issues on {@link ImportStatsTracker}.
+     * {@code reason} is only ever populated for {@code REJECTED_UNSUPPORTED_CODEC}.
      */
-    private record FileImportResult(ImportOutcome outcome, boolean video, long fileSize) {}
+    private record FileImportResult(ImportOutcome outcome, boolean video, long fileSize, String reason) {}
 
-    private record ScanResult(List<Path> files, long unsupportedExtensionCount) {}
+    private record ScanResult(List<Path> files, List<Path> unsupportedExtensionFiles) {}
 }

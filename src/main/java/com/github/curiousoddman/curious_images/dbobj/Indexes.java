@@ -12,6 +12,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember;
 import com.github.curiousoddman.curious_images.dbobj.tables.Face;
 import com.github.curiousoddman.curious_images.dbobj.tables.FlywaySchemaHistory;
+import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
 
@@ -52,6 +53,7 @@ public class Indexes {
     public static final Index IDX_DUPLICATE_GROUP_MEMBER_MEDIA = Internal.createIndex(DSL.name("IDX_DUPLICATE_GROUP_MEMBER_MEDIA"), DuplicateGroupMember.DUPLICATE_GROUP_MEMBER, new OrderField[] { DuplicateGroupMember.DUPLICATE_GROUP_MEMBER.MEDIA_ID }, false);
     public static final Index IDX_FACE_CLUSTER_ID = Internal.createIndex(DSL.name("IDX_FACE_CLUSTER_ID"), Face.FACE, new OrderField[] { Face.FACE.CLUSTER_ID }, false);
     public static final Index IDX_FACE_MEDIA = Internal.createIndex(DSL.name("IDX_FACE_MEDIA"), Face.FACE, new OrderField[] { Face.FACE.MEDIA_ID }, false);
+    public static final Index IDX_IMPORT_JOB_FILE_ISSUE_RUN_ID = Internal.createIndex(DSL.name("IDX_IMPORT_JOB_FILE_ISSUE_RUN_ID"), ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE, new OrderField[] { ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE.RUN_ID }, false);
     public static final Index IDX_MEDIA_CAPTURE_DATE = Internal.createIndex(DSL.name("IDX_MEDIA_CAPTURE_DATE"), Media.MEDIA, new OrderField[] { Media.MEDIA.CAPTURE_DATE }, false);
     public static final Index IDX_MEDIA_FOLDER = Internal.createIndex(DSL.name("IDX_MEDIA_FOLDER"), Media.MEDIA, new OrderField[] { Media.MEDIA.FOLDER_ID }, false);
     public static final Index IDX_MEDIA_HASH_CONTENT_HASH = Internal.createIndex(DSL.name("IDX_MEDIA_HASH_CONTENT_HASH"), MediaHash.MEDIA_HASH, new OrderField[] { MediaHash.MEDIA_HASH.CONTENT_HASH }, false);

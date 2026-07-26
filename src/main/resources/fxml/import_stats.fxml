@@ -98,7 +98,26 @@
 
                 <Separator/>
 
-                <Label text="Failed" styleClass="h3"/>
+                <Label text="Skipped files" styleClass="h3"/>
+                <GridPane hgap="12" vgap="6">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Skipped files:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label fx:id="skippedIssueCountLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <!-- One TitledPane per distinct skip reason (unsupported codec / unsupported
+                     extension only — NOT routine "unchanged" skips, see the Ignored counts above),
+                     each containing the individual file paths — see
+                     ImportStatsController#renderIssueSection. -->
+                <Accordion fx:id="skippedAccordion"/>
+
+                <Separator/>
+
+                <Label text="Failed files" styleClass="h3"/>
                 <GridPane hgap="12" vgap="6">
                     <columnConstraints>
                         <ColumnConstraints minWidth="140"/>
@@ -110,8 +129,8 @@
                 </GridPane>
 
                 <!-- One TitledPane per distinct failure reason, each containing the individual
-                     file paths that failed for that reason — see ImportStatsController#renderFailures. -->
-                <Accordion fx:id="failuresAccordion"/>
+                     file paths that failed for that reason — see ImportStatsController#renderIssueSection. -->
+                <Accordion fx:id="failedAccordion"/>
 
             </VBox>
         </VBox>

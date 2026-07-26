@@ -15,6 +15,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Face;
 import com.github.curiousoddman.curious_images.dbobj.tables.FaceEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.FlywaySchemaHistory;
 import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
+import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
@@ -39,6 +40,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.records.FaceEmbeddin
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FaceRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FlywaySchemaHistoryRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FolderRecord;
+import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobFileIssueRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobStatsRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportRootRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaHashRecord;
@@ -96,6 +98,7 @@ public class Keys {
     public static final UniqueKey<FlywaySchemaHistoryRecord> FLYWAY_SCHEMA_HISTORY_PK = Internal.createUniqueKey(FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY, DSL.name("flyway_schema_history_pk"), new TableField[] { FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY.INSTALLED_RANK }, true);
     public static final UniqueKey<FolderRecord> CONSTRAINT_7B = Internal.createUniqueKey(Folder.FOLDER, DSL.name("CONSTRAINT_7B"), new TableField[] { Folder.FOLDER.ID }, true);
     public static final UniqueKey<FolderRecord> CONSTRAINT_7BF01 = Internal.createUniqueKey(Folder.FOLDER, DSL.name("CONSTRAINT_7BF01"), new TableField[] { Folder.FOLDER.IMPORT_ROOT_ID, Folder.FOLDER.RELATIVE_PATH }, true);
+    public static final UniqueKey<ImportJobFileIssueRecord> CONSTRAINT_58 = Internal.createUniqueKey(ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE, DSL.name("CONSTRAINT_58"), new TableField[] { ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE.ID }, true);
     public static final UniqueKey<ImportJobStatsRecord> CONSTRAINT_B6F = Internal.createUniqueKey(ImportJobStats.IMPORT_JOB_STATS, DSL.name("CONSTRAINT_B6F"), new TableField[] { ImportJobStats.IMPORT_JOB_STATS.ID }, true);
     public static final UniqueKey<ImportRootRecord> CONSTRAINT_D = Internal.createUniqueKey(ImportRoot.IMPORT_ROOT, DSL.name("CONSTRAINT_D"), new TableField[] { ImportRoot.IMPORT_ROOT.ID }, true);
     public static final UniqueKey<ImportRootRecord> CONSTRAINT_D9 = Internal.createUniqueKey(ImportRoot.IMPORT_ROOT, DSL.name("CONSTRAINT_D9"), new TableField[] { ImportRoot.IMPORT_ROOT.PATH }, true);
@@ -129,6 +132,7 @@ public class Keys {
     public static final ForeignKey<FaceEmbeddingRecord, FaceRecord> CONSTRAINT_707 = Internal.createForeignKey(FaceEmbedding.FACE_EMBEDDING, DSL.name("CONSTRAINT_707"), new TableField[] { FaceEmbedding.FACE_EMBEDDING.FACE_ID }, Keys.CONSTRAINT_20, new TableField[] { Face.FACE.ID }, true);
     public static final ForeignKey<FolderRecord, ImportRootRecord> CONSTRAINT_7BF = Internal.createForeignKey(Folder.FOLDER, DSL.name("CONSTRAINT_7BF"), new TableField[] { Folder.FOLDER.IMPORT_ROOT_ID }, Keys.CONSTRAINT_D, new TableField[] { ImportRoot.IMPORT_ROOT.ID }, true);
     public static final ForeignKey<FolderRecord, FolderRecord> CONSTRAINT_7BF0 = Internal.createForeignKey(Folder.FOLDER, DSL.name("CONSTRAINT_7BF0"), new TableField[] { Folder.FOLDER.PARENT_FOLDER_ID }, Keys.CONSTRAINT_7B, new TableField[] { Folder.FOLDER.ID }, true);
+    public static final ForeignKey<ImportJobFileIssueRecord, ImportJobStatsRecord> FK_IMPORT_JOB_FILE_ISSUE_RUN = Internal.createForeignKey(ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE, DSL.name("FK_IMPORT_JOB_FILE_ISSUE_RUN"), new TableField[] { ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE.RUN_ID }, Keys.CONSTRAINT_B6F, new TableField[] { ImportJobStats.IMPORT_JOB_STATS.ID }, true);
     public static final ForeignKey<MediaRecord, FolderRecord> CONSTRAINT_45 = Internal.createForeignKey(Media.MEDIA, DSL.name("CONSTRAINT_45"), new TableField[] { Media.MEDIA.FOLDER_ID }, Keys.CONSTRAINT_7B, new TableField[] { Folder.FOLDER.ID }, true);
     public static final ForeignKey<MediaHashRecord, MediaRecord> CONSTRAINT_92 = Internal.createForeignKey(MediaHash.MEDIA_HASH, DSL.name("CONSTRAINT_92"), new TableField[] { MediaHash.MEDIA_HASH.MEDIA_ID }, Keys.CONSTRAINT_4, new TableField[] { Media.MEDIA.ID }, true);
     public static final ForeignKey<MediaTagRecord, TagEmbeddingRecord> CONSTRAINT_25 = Internal.createForeignKey(MediaTag.MEDIA_TAG, DSL.name("CONSTRAINT_25"), new TableField[] { MediaTag.MEDIA_TAG.TAG_ID }, Keys.CONSTRAINT_7BE, new TableField[] { TagEmbedding.TAG_EMBEDDING.ID }, true);

@@ -28,8 +28,8 @@ public class AddFilesJob extends BackgroundJob {
     @Override
     public void runImpl() {
         publishStarted("Preparing to add files…");
-        ImportJobType jobType        = request.copyToDestination() ? ImportJobType.COPY : ImportJobType.NEW_ROOT;
-        boolean       sessionStarted = false;
+        ImportJobType jobType = request.copyToDestination() ? ImportJobType.COPY : ImportJobType.NEW_ROOT;
+        boolean sessionStarted = false;
         try {
             List<String> scanRoots;
 

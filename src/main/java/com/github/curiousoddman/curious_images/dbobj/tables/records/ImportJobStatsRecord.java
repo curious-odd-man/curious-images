@@ -228,20 +228,6 @@ public class ImportJobStatsRecord extends UpdatableRecordImpl<ImportJobStatsReco
         return (Long) get(13);
     }
 
-    /**
-     * Setter for <code>public.IMPORT_JOB_STATS.FAILURES_JSON</code>.
-     */
-    public void setFailuresJson(String value) {
-        set(14, value);
-    }
-
-    /**
-     * Getter for <code>public.IMPORT_JOB_STATS.FAILURES_JSON</code>.
-     */
-    public String getFailuresJson() {
-        return (String) get(14);
-    }
-
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -265,7 +251,7 @@ public class ImportJobStatsRecord extends UpdatableRecordImpl<ImportJobStatsReco
     /**
      * Create a detached, initialised ImportJobStatsRecord
      */
-    public ImportJobStatsRecord(Long id, String jobType, String rootPathsJson, String status, LocalDateTime startedAt, LocalDateTime finishedAt, Long photoImportedCount, Long photoUpdatedCount, Long videoImportedCount, Long videoUpdatedCount, Long bytesImported, Long skippedUnchangedCount, Long unsupportedCodecCount, Long unsupportedExtensionCount, String failuresJson) {
+    public ImportJobStatsRecord(Long id, String jobType, String rootPathsJson, String status, LocalDateTime startedAt, LocalDateTime finishedAt, Long photoImportedCount, Long photoUpdatedCount, Long videoImportedCount, Long videoUpdatedCount, Long bytesImported, Long skippedUnchangedCount, Long unsupportedCodecCount, Long unsupportedExtensionCount) {
         super(ImportJobStats.IMPORT_JOB_STATS);
 
         setId(id);
@@ -282,7 +268,6 @@ public class ImportJobStatsRecord extends UpdatableRecordImpl<ImportJobStatsReco
         setSkippedUnchangedCount(skippedUnchangedCount);
         setUnsupportedCodecCount(unsupportedCodecCount);
         setUnsupportedExtensionCount(unsupportedExtensionCount);
-        setFailuresJson(failuresJson);
         resetChangedOnNotNull();
     }
 }
