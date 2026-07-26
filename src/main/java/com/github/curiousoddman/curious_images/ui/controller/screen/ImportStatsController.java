@@ -1,6 +1,6 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
-import com.github.curiousoddman.curious_images.domain.imports.ImportFileIssue;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportFileIssue;
 import com.github.curiousoddman.curious_images.event.model.ImportStatsUpdatedEvent;
 import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;

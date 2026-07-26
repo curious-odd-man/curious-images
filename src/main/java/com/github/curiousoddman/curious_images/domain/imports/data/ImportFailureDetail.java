@@ -1,4 +1,6 @@
-package com.github.curiousoddman.curious_images.domain.imports;
+package com.github.curiousoddman.curious_images.domain.imports.data;
+
+import com.github.curiousoddman.curious_images.domain.imports.ImportStatsTracker;
 
 /**
  * One file that failed to import, paired with the reason it failed. Collected during a run by

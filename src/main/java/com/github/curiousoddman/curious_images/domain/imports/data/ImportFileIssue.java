@@ -1,4 +1,4 @@
-package com.github.curiousoddman.curious_images.domain.imports;
+package com.github.curiousoddman.curious_images.domain.imports.data;
 
 /**
  * One file worth calling out from an import run — either it was skipped for a specific reason

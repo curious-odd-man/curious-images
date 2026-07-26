@@ -1,4 +1,4 @@
-package com.github.curiousoddman.curious_images.domain.imports;
+package com.github.curiousoddman.curious_images.domain.imports.data;
 
 /**
  * Kind of row in {@code IMPORT_JOB_FILE_ISSUE} — see {@link ImportFileIssue}. Deliberately narrow:

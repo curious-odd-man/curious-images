@@ -1,8 +1,8 @@
 package com.github.curiousoddman.curious_images.model;
 
-import com.github.curiousoddman.curious_images.domain.imports.ImportFileIssue;
-import com.github.curiousoddman.curious_images.domain.imports.ImportFileIssueType;
-import com.github.curiousoddman.curious_images.domain.imports.ImportJobType;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportFileIssue;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportFileIssueType;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportJobType;
 import com.github.curiousoddman.curious_images.util.async.jobs.JobStatus;
 
 import java.time.LocalDateTime;
@@ -21,23 +21,23 @@ import java.util.List;
  * settles to {@link JobStatus#COMPLETED}, {@link JobStatus#FAILED}, or {@link JobStatus#INTERRUPTED}
  * once the job ends.
  *
- * @param id                       this run's id (0 until inserted)
- * @param jobType                  how this run was triggered
- * @param rootPaths                the import root path(s) scanned during this run
- * @param status                   current/final status of the run
- * @param startedAt                when the run started
- * @param finishedAt               when the run ended, or {@code null} while still running
- * @param photoImportedCount       brand-new photo rows created
- * @param photoUpdatedCount        existing photo rows updated (file changed on disk)
- * @param videoImportedCount       brand-new video rows created
- * @param videoUpdatedCount        existing video rows updated (file changed on disk)
- * @param bytesImported            total size, in bytes, of every imported + updated file
- * @param skippedUnchangedCount    files already known, unchanged since last scan (aggregate only —
- *                                 routine, so no per-file {@code issues} row for these)
- * @param unsupportedCodecCount    videos discovered but rejected for an unsupported codec
+ * @param id                        this run's id (0 until inserted)
+ * @param jobType                   how this run was triggered
+ * @param rootPaths                 the import root path(s) scanned during this run
+ * @param status                    current/final status of the run
+ * @param startedAt                 when the run started
+ * @param finishedAt                when the run ended, or {@code null} while still running
+ * @param photoImportedCount        brand-new photo rows created
+ * @param photoUpdatedCount         existing photo rows updated (file changed on disk)
+ * @param videoImportedCount        brand-new video rows created
+ * @param videoUpdatedCount         existing video rows updated (file changed on disk)
+ * @param bytesImported             total size, in bytes, of every imported + updated file
+ * @param skippedUnchangedCount     files already known, unchanged since last scan (aggregate only —
+ *                                  routine, so no per-file {@code issues} row for these)
+ * @param unsupportedCodecCount     videos discovered but rejected for an unsupported codec
  * @param unsupportedExtensionCount files discovered whose extension isn't a supported media type at all
- * @param issues                   individual skipped (codec/extension only) or failed files, each
- *                                 with its own reason — see {@code IMPORT_JOB_FILE_ISSUE}
+ * @param issues                    individual skipped (codec/extension only) or failed files, each
+ *                                  with its own reason — see {@code IMPORT_JOB_FILE_ISSUE}
  */
 public record ImportJobStats(
         long id,
@@ -90,5 +90,13 @@ public record ImportJobStats(
         return issues.stream()
                      .filter(i -> i.type() == ImportFileIssueType.FAILED)
                      .toList();
+    }
+
+    public long importedCount() {
+        return photoImportedCount + videoImportedCount;
+    }
+
+    public long rejectedCodecCount() {
+        return unsupportedCodecCount;
     }
 }

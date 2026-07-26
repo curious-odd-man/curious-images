@@ -22,6 +22,7 @@ import com.github.curiousoddman.curious_images.domain.dedupe.hasher.PixelHasher;
 import com.github.curiousoddman.curious_images.domain.imports.AddFilesJob;
 import com.github.curiousoddman.curious_images.domain.imports.ImportJob;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.PhotoMetadataExtractor;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.StatsSessionFactory;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor;
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
@@ -36,7 +37,6 @@ import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingReposito
 import com.github.curiousoddman.curious_images.persistence.FaceRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceThumbnailsRepository;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
-import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
@@ -54,27 +54,24 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JobFactory {
-    private final DSLContext              dsl;
+    private final DSLContext               dsl;
     private final ImportRootRepository     importRootRepository;
     private final FolderRepository         folderRepository;
     private final MediaRepository          mediaRepository;
-    private final ImportJobStatsRepository importJobStatsRepository;
-    private final ThumbnailRepository     thumbnailRepository;
-    private final PhotoPreviewRepository  photoPreviewRepository;
-    private final PhotoMetadataExtractor  photoMetadataExtractor;
-    private final VideoMetadataExtractor  videoMetadataExtractor;
-    private final ThumbnailGenerator      thumbnailGenerator;
-    private final VideoThumbnailGenerator videoThumbnailGenerator;
-    private final ImageUtils              imageUtils;
-    private final VideoFrameSampler       videoFrameSampler;
-    private final TimeProvider            timeProvider;
-
+    private final ThumbnailRepository      thumbnailRepository;
+    private final PhotoPreviewRepository   photoPreviewRepository;
+    private final PhotoMetadataExtractor   photoMetadataExtractor;
+    private final VideoMetadataExtractor   videoMetadataExtractor;
+    private final ThumbnailGenerator       thumbnailGenerator;
+    private final VideoThumbnailGenerator  videoThumbnailGenerator;
+    private final ImageUtils               imageUtils;
+    private final VideoFrameSampler        videoFrameSampler;
+    private final TimeProvider             timeProvider;
     private final MediaHashRepository      photoHashRepository;
     private final DuplicateJobRepository   duplicateJobRepository;
     private final DuplicateGroupRepository duplicateGroupRepository;
     private final PixelHasher              pixelHasher;
     private final FileHasher               fileHasher;
-
     private final FaceRepository           faceRepository;
     private final FaceEmbeddingRepository  faceEmbeddingRepository;
     private final ClipEmbeddingRepository  clipEmbeddingRepository;
@@ -94,6 +91,7 @@ public class JobFactory {
     private final ModelPaths               modelPaths;
     private final ClipTextEncoder          clipTextEncoder;
     private final PhotoTagRepository       photoTagRepository;
+    private final StatsSessionFactory      statsSessionFactory;
 
     public ImportJob createImportJob(List<String> paths) {
         return new ImportJob(
@@ -104,9 +102,9 @@ public class JobFactory {
                 photoPreviewRepository,
                 photoMetadataExtractor,
                 videoMetadataExtractor,
-                importJobStatsRepository,
                 timeProvider,
-                paths
+                paths,
+                statsSessionFactory
         );
     }
 
@@ -173,7 +171,8 @@ public class JobFactory {
         return new AddFilesJob(
                 createImportJob(List.of()),
                 jobManager,
-                request
+                request,
+                statsSessionFactory
         );
     }
 

@@ -1,5 +1,8 @@
 package com.github.curiousoddman.curious_images.domain.imports;
 
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportJobType;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.StatsSession;
+import com.github.curiousoddman.curious_images.domain.imports.metadata.StatsSessionFactory;
 import com.github.curiousoddman.curious_images.model.AddFilesRequest;
 import com.github.curiousoddman.curious_images.util.CopyFileTreeVisitor;
 import com.github.curiousoddman.curious_images.util.FileUtils;
@@ -12,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -19,17 +23,18 @@ public class AddFilesJob extends BackgroundJob {
 
     public static final String ADD_FILES = "Add Files";
 
-    private final ImportJob       importJob;
-    private final JobManager      jobManager;
-    private final AddFilesRequest request;
+    private final ImportJob           importJob;
+    private final JobManager          jobManager;
+    private final AddFilesRequest     request;
+    private final StatsSessionFactory statsSessionFactory;
 
     // ── Core logic ────────────────────────────────────────────────────────────
 
     @Override
     public void runImpl() {
+        AtomicBoolean interrupted = new AtomicBoolean(false);
         publishStarted("Preparing to add files…");
         ImportJobType jobType = request.copyToDestination() ? ImportJobType.COPY : ImportJobType.NEW_ROOT;
-        boolean sessionStarted = false;
         try {
             List<String> scanRoots;
 
@@ -37,6 +42,7 @@ public class AddFilesJob extends BackgroundJob {
                 // ── Phase 1: copy source trees into the destination ────────────
                 scanRoots = copySourcesIntoDestination(request);
                 if (isInterruptRequested()) {
+                    interrupted.set(true);
                     publishInterrupted();
                     return;
                 }
@@ -44,53 +50,37 @@ public class AddFilesJob extends BackgroundJob {
                 // ── In-place: scan source paths directly as new roots ──────────
                 scanRoots = request.sourcePaths();
             }
-
-            // Stats session covers every root below, whether copied-to or in-place — see
-            // ImportStatsTracker; started only now that we know the *effective* scan roots
-            // (post-copy destinations, not the original source paths).
-            importJob.beginStatsSession(jobType, scanRoots);
-            sessionStarted = true;
-
-            // ── Phase 2: import every effective root via ImportService ─────────
-            publishInProgress("Scanning imported files…", 0, scanRoots.size());
-            for (int i = 0; i < scanRoots.size(); i++) {
-                if (isInterruptRequested()) {
-                    publishInterrupted();
-                    importJob.finishStatsSession(true);
-                    return;
+            try (StatsSession statsSession = statsSessionFactory.getSession(jobType, scanRoots, interrupted)) {
+                // ── Phase 2: import every effective root via ImportService ─────────
+                publishInProgress("Scanning imported files…", 0, scanRoots.size());
+                for (int i = 0; i < scanRoots.size(); i++) {
+                    if (isInterruptRequested()) {
+                        publishInterrupted();
+                        interrupted.set(true);
+                        return;
+                    }
+                    String root = scanRoots.get(i);
+                    log.info("AddFilesService: handing off root {} of {} to ImportService: {}",
+                            i + 1, scanRoots.size(), root);
+                    publishInProgress("Importing root " + (i + 1) + " of " + scanRoots.size()
+                            + ": " + root, i, scanRoots.size());
+                    importJob.runImportInternal(statsSession, root);
                 }
-                String root = scanRoots.get(i);
-                log.info("AddFilesService: handing off root {} of {} to ImportService: {}",
-                        i + 1, scanRoots.size(), root);
-                publishInProgress("Importing root " + (i + 1) + " of " + scanRoots.size()
-                        + ": " + root, i, scanRoots.size());
-                /*
-                 * ImportService.runImportInternal() is the same method called by
-                 * onRescanEvent. We call it directly (package-accessible) so we can
-                 * sequence multiple roots in a single background job without going
-                 * through the event bus (which would start a competing background job).
-                 */
-                importJob.runImportInternal(root);
-            }
-            importJob.finishStatsSession(false);
 
-            publishEnded("Files added successfully");
+                publishEnded("Files added successfully");
 
-            // ── Phase 3: optional post-processing ─────────────────────────────
-            if (request.runAiPipeline()) {
-                log.info("AddFilesService: triggering AI pipeline");
-                jobManager.submitAiPipelineJob();
+                // ── Phase 3: optional post-processing ─────────────────────────────
+                if (request.runAiPipeline()) {
+                    log.info("AddFilesService: triggering AI pipeline");
+                    jobManager.submitAiPipelineJob();
+                }
+                if (request.runDuplicateDetection()) {
+                    log.info("AddFilesService: triggering duplicate detection");
+                    jobManager.submitDuplicatesJob();
+                }
             }
-            if (request.runDuplicateDetection()) {
-                log.info("AddFilesService: triggering duplicate detection");
-                jobManager.submitDuplicatesJob();
-            }
-
         } catch (Exception e) {
             log.error("AddFilesService failed", e);
-            if (sessionStarted) {
-                importJob.finishStatsSession(false);
-            }
             publishFailed(e);
         }
     }

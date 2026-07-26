@@ -1,4 +1,6 @@
-package com.github.curiousoddman.curious_images.domain.imports;
+package com.github.curiousoddman.curious_images.domain.imports.data;
+
+import com.github.curiousoddman.curious_images.domain.imports.ImportJob;
 
 /**
  * How a given run of {@link ImportJob} was triggered — drives the "Import type" field shown in

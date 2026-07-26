@@ -1,10 +1,14 @@
 package com.github.curiousoddman.curious_images.domain.imports;
 
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportFileIssue;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportFileIssueType;
+import com.github.curiousoddman.curious_images.domain.imports.data.ImportJobType;
 import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.util.TimeProvider;
 import com.github.curiousoddman.curious_images.util.async.jobs.JobStatus;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,19 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Accumulates counters and per-file issues across one whole job run — which, for
- * {@code AddFilesJob}, spans every root it hands off to {@link ImportJob#runImportInternal}, not
- * just a single root. Created fresh per run by {@link ImportJob#beginStatsSession}; its snapshot is
- * inserted as a new {@code IMPORT_JOB_STATS} row (real per-run history — every run gets its own
- * id, see {@code ImportJobStatsRepository#insertStarted}), then that same row is updated in place
- * as the run progresses and finally by {@link ImportJob#finishStatsSession}, which is also when
- * {@link #issues} gets bulk-inserted as {@code IMPORT_JOB_FILE_ISSUE} rows keyed to this run's id.
- * <p>
- * Thread-safe: {@code ImportJob} only ever drives one run at a time on its background thread, but
- * counters use atomics defensively since {@code snapshot()} can be called concurrently with
- * persistence/event-publishing.
- */
+@Slf4j
 public class ImportStatsTracker {
     private final ImportJobType jobType;
     private final List<String>  rootPaths;

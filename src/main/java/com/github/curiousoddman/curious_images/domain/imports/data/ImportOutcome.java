@@ -1,4 +1,4 @@
-package com.github.curiousoddman.curious_images.domain.imports;
+package com.github.curiousoddman.curious_images.domain.imports.data;
 
 /**
  * Result of importing a single file, used both to drive the imported/skipped counters in the
