@@ -122,6 +122,8 @@ public class LibraryController implements Initializable {
     @FXML
     public AnchorPane                folderDuplicatesContainer;
     @FXML
+    public AnchorPane                importStatsContainer;
+    @FXML
     public HBox                      backgroundProgressContainer;
     @FXML
     public Label                     backgroundProcessTitleLabel;
@@ -178,13 +180,15 @@ public class LibraryController implements Initializable {
 
         LoadedFxml<DuplicatesController>       duplicatesLoaded       = fxmlLoader.loadFxmlAndAttachToParent(duplicatesContainer, FxmlView.DUPLICATES);
         LoadedFxml<FolderDuplicatesController> folderDuplicatesLoaded = fxmlLoader.loadFxmlAndAttachToParent(folderDuplicatesContainer, FxmlView.FOLDER_DUPLICATES);
+        LoadedFxml<ImportStatsController>      importStatsLoaded      = fxmlLoader.loadFxmlAndAttachToParent(importStatsContainer, FxmlView.IMPORT_STATS);
         checkModelsAndPromptDownload();
 
         libraryViewManager.initialize(
                 new UiElement<>(photoGridContainer, gridController),
                 new UiElement<>(duplicatesContainer, duplicatesLoaded.controller()),
                 new UiElement<>(folderDuplicatesContainer, folderDuplicatesLoaded.controller()),
-                new UiElement<>(personDetailContainer, personDetailController)
+                new UiElement<>(personDetailContainer, personDetailController),
+                new UiElement<>(importStatsContainer, importStatsLoaded.controller())
         );
     }
 
@@ -271,6 +275,12 @@ public class LibraryController implements Initializable {
                         .type() == NodeType.DUPLICATES_FOLDER_ROOT) {
             clearSearchState();
             libraryViewManager.showFolderDuplicatesView();
+            return;
+        }
+        if (selectedItem.getValue()
+                        .type() == NodeType.IMPORT_STATS) {
+            clearSearchState();
+            libraryViewManager.showImportStats();
             return;
         }
         NodePayload payload = selectedItem.getValue()

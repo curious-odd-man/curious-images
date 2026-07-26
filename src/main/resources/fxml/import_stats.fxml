@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.github.curiousoddman.curious_images.ui.controller.screen.ImportStatsController">
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+        <VBox spacing="16">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <!-- Shown when no import has ever run -->
+            <VBox fx:id="emptyState" alignment="CENTER" spacing="8">
+                <Label text="Last Import" styleClass="h2"/>
+                <Label text="No import has run yet."/>
+            </VBox>
+
+            <!-- Populated by ImportStatsController#render -->
+            <VBox fx:id="statsContent" spacing="16" managed="false" visible="false">
+
+                <Label text="Last Import" styleClass="h2"/>
+
+                <GridPane hgap="12" vgap="6">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Import type:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label fx:id="jobTypeLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Root path(s):" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <Label fx:id="rootPathsLabel" wrapText="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="Status:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label fx:id="statusLabel" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Started at:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <Label fx:id="startedAtLabel" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Duration:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <Label fx:id="durationLabel" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <Separator/>
+
+                <Label text="Files by type" styleClass="h3"/>
+                <GridPane hgap="12" vgap="6">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Photos imported:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label fx:id="photoImportedLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Photos updated:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <Label fx:id="photoUpdatedLabel" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="Videos imported:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label fx:id="videoImportedLabel" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                    <Label text="Videos updated:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                    <Label fx:id="videoUpdatedLabel" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                    <Label text="Total size imported:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                    <Label fx:id="sizeImportedLabel" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <Separator/>
+
+                <Label text="Ignored" styleClass="h3"/>
+                <GridPane hgap="12" vgap="6">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Skipped (unchanged):" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label fx:id="skippedUnchangedLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                    <Label text="Unsupported codec:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <Label fx:id="unsupportedCodecLabel" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                    <Label text="Unsupported extension:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <Label fx:id="unsupportedExtensionLabel" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <Separator/>
+
+                <Label text="Failed" styleClass="h3"/>
+                <GridPane hgap="12" vgap="6">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Failed files:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <Label fx:id="failedCountLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                </GridPane>
+
+                <!-- One TitledPane per distinct failure reason, each containing the individual
+                     file paths that failed for that reason — see ImportStatsController#renderFailures. -->
+                <Accordion fx:id="failuresAccordion"/>
+
+            </VBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

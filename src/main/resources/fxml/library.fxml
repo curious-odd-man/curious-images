@@ -59,6 +59,7 @@
                                  runtime in LibraryController#initialize) ── -->
                             <AnchorPane fx:id="duplicatesContainer" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />
                             <AnchorPane fx:id="folderDuplicatesContainer" layoutX="10.0" layoutY="10.0" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />
+                     <AnchorPane fx:id="importStatsContainer" layoutX="20.0" layoutY="20.0" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />
 
                         </StackPane>
                     </children>

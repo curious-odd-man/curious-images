@@ -8,6 +8,7 @@ import com.github.curiousoddman.curious_images.ui.FxmlView;
 import com.github.curiousoddman.curious_images.ui.controller.custom.GridController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.DuplicatesController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.FolderDuplicatesController;
+import com.github.curiousoddman.curious_images.ui.controller.screen.ImportStatsController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.PersonDetailController;
 import javafx.scene.Node;
 import lombok.RequiredArgsConstructor;
@@ -33,20 +34,24 @@ public class LibraryViewManager {
     private UiElement<DuplicatesController> duplicates;
     private UiElement<FolderDuplicatesController> folderDuplicates;
     private UiElement<PersonDetailController>     personDetails;
+    private UiElement<ImportStatsController>      importStats;
 
     public void initialize(UiElement<GridController> photoGridView,
                            UiElement<DuplicatesController> duplicatesContainer,
                            UiElement<FolderDuplicatesController> folderDuplicatesContainer,
-                           UiElement<PersonDetailController> personDetailContainer) {
+                           UiElement<PersonDetailController> personDetailContainer,
+                           UiElement<ImportStatsController> importStatsContainer) {
         this.photoGrid = photoGridView;
         this.duplicates = duplicatesContainer;
         this.folderDuplicates = folderDuplicatesContainer;
         this.personDetails = personDetailContainer;
+        this.importStats = importStatsContainer;
 
         uiElements.add(photoGridView);
         uiElements.add(personDetailContainer);
         uiElements.add(duplicatesContainer);
         uiElements.add(folderDuplicatesContainer);
+        uiElements.add(importStatsContainer);
     }
 
     public PersonDetailController showPersonDetail(long personId, UiElement<PersonDetailController> personDetailsElement, GridCellResources gridCellResources) {
@@ -84,6 +89,12 @@ public class LibraryViewManager {
         show(folderDuplicates);
         folderDuplicates.controller()
                         .activateFolderDuplicatesView();
+    }
+
+    public void showImportStats() {
+        show(importStats);
+        importStats.controller()
+                   .refresh();
     }
 
     @EventListener

@@ -6,8 +6,11 @@ import com.github.curiousoddman.curious_images.domain.imports.metadata.Extracted
 import com.github.curiousoddman.curious_images.domain.imports.metadata.PhotoMetadataExtractor;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.UnsupportedVideoCodecException;
 import com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor;
+import com.github.curiousoddman.curious_images.event.model.ImportStatsUpdatedEvent;
 import com.github.curiousoddman.curious_images.event.model.LibraryUpdatedEvent;
+import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
+import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository.ExistingMediaSummary;
@@ -16,6 +19,7 @@ import com.github.curiousoddman.curious_images.util.FileCollectingVisitor;
 import com.github.curiousoddman.curious_images.util.FileUtils;
 import com.github.curiousoddman.curious_images.util.TimeProvider;
 import com.github.curiousoddman.curious_images.util.async.jobs.BackgroundJob;
+import com.github.curiousoddman.curious_images.util.async.jobs.JobStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
@@ -49,27 +53,101 @@ public class ImportJob extends BackgroundJob {
     private static final int         DB_FLUSH_BATCH_SIZE      = 200;
     private static final int         APPROXIMATE_LIBRARY_SIZE = 25_000;
 
-    private final DSLContext             dsl;
-    private final ImportRootRepository   importRootRepository;
-    private final FolderRepository       folderRepository;
-    private final MediaRepository        mediaRepository;
-    private final PhotoPreviewRepository photoPreviewRepository;
-    private final PhotoMetadataExtractor metadataExtractor;
-    private final VideoMetadataExtractor videoMetadataExtractor;
-    private final TimeProvider           timeProvider;
-    private final List<String>           rootPaths;
+    /**
+     * Minimum interval between throttled stats persist/publish calls during a run — deliberately
+     * coarser than {@code BackgroundJob}'s own progress-publish throttle, since this hits the DB
+     * on every publish rather than just the event bus.
+     */
+    private static final long STATS_PUBLISH_INTERVAL_MS = 500;
+
+    private final DSLContext               dsl;
+    private final ImportRootRepository     importRootRepository;
+    private final FolderRepository         folderRepository;
+    private final MediaRepository          mediaRepository;
+    private final PhotoPreviewRepository   photoPreviewRepository;
+    private final PhotoMetadataExtractor   metadataExtractor;
+    private final VideoMetadataExtractor   videoMetadataExtractor;
+    private final ImportJobStatsRepository importJobStatsRepository;
+    private final TimeProvider             timeProvider;
+    private final List<String>             rootPaths;
+
+    /**
+     * Non-null for the duration of one "session" — everything between {@link #beginStatsSession}
+     * and {@link #finishStatsSession}, which may span several {@link #runImportInternal} calls
+     * across several roots (see {@code AddFilesJob}, which drives this job's scan method directly
+     * without going through {@link #runImpl()}).
+     */
+    private volatile ImportStatsTracker statsTracker;
+    private volatile boolean            sessionHadRootLevelFailure;
+    private volatile long               lastStatsPublishMs;
 
     @Override
     public void runImpl() throws Exception {
+        beginStatsSession(ImportJobType.RESCAN, rootPaths);
+        boolean interrupted = false;
         for (int i = 0; i < rootPaths.size(); i++) {
             if (isInterruptRequested()) {
                 publishInterrupted();
-                return;
+                interrupted = true;
+                break;
             }
             log.info("Multi-root scan: root {} of {}: {}", i + 1, rootPaths.size(), rootPaths.get(i));
             runImportInternal(rootPaths.get(i));
         }
-        eventPublisher.publishEvent(new LibraryUpdatedEvent(this));
+        finishStatsSession(interrupted);
+        if (!interrupted) {
+            eventPublisher.publishEvent(new LibraryUpdatedEvent(this));
+        }
+    }
+
+    // ── Stats session (see ImportStatsTracker) ─────────────────────────────────
+
+    /**
+     * Starts a new stats-tracking session for one whole job run. Called by {@link #runImpl()}
+     * itself for a plain rescan, or by {@code AddFilesJob} before it drives
+     * {@link #runImportInternal} directly for each of its (possibly copied-to) roots.
+     */
+    void beginStatsSession(ImportJobType jobType, List<String> effectiveRootPaths) {
+        sessionHadRootLevelFailure = false;
+        statsTracker = new ImportStatsTracker(jobType, effectiveRootPaths, timeProvider);
+        lastStatsPublishMs = 0;
+        persistAndPublishStats(JobStatus.RUNNING);
+    }
+
+    /**
+     * Ends the current stats-tracking session: persists and publishes the final snapshot, then
+     * clears the tracker so a stale one can't leak into the next run.
+     */
+    void finishStatsSession(boolean interrupted) {
+        if (statsTracker == null) {
+            return;
+        }
+        JobStatus finalStatus = interrupted
+                ? JobStatus.INTERRUPTED
+                : (sessionHadRootLevelFailure ? JobStatus.FAILED : JobStatus.COMPLETED);
+        persistAndPublishStats(finalStatus);
+        statsTracker = null;
+    }
+
+    private void persistAndPublishStats(JobStatus status) {
+        if (statsTracker == null) {
+            return;
+        }
+        ImportJobStats snapshot = statsTracker.snapshot(status);
+        importJobStatsRepository.upsert(snapshot);
+        eventPublisher.publishEvent(new ImportStatsUpdatedEvent(this, snapshot));
+    }
+
+    private synchronized void persistAndPublishStatsThrottled(boolean force) {
+        if (statsTracker == null) {
+            return;
+        }
+        long nowMs = System.currentTimeMillis();
+        if (!force && nowMs - lastStatsPublishMs < STATS_PUBLISH_INTERVAL_MS) {
+            return;
+        }
+        lastStatsPublishMs = nowMs;
+        persistAndPublishStats(JobStatus.RUNNING);
     }
 
     // ── Internal scan (synchronous, called on the background thread) ──────────
@@ -86,7 +164,11 @@ public class ImportJob extends BackgroundJob {
             long            importRootId  = importRootRepository.findOrCreate(rootPathString, timeProvider.now());
             Map<Path, Long> folderIdCache = new HashMap<>();
 
-            List<Path> files = scan(rootPath);
+            ScanResult scanResult = scan(rootPath);
+            List<Path> files      = scanResult.files();
+            if (statsTracker != null) {
+                statsTracker.recordUnsupportedExtension(scanResult.unsupportedExtensionCount());
+            }
             log.info("Discovered {} supported files under {}", files.size(), rootPathString);
             publishInProgress("Reading files", 0, files.size());
 
@@ -95,20 +177,33 @@ public class ImportJob extends BackgroundJob {
                 if (isInterruptRequested()) {
                     flush(buffer);
                     log.info("Import scan interrupted after {} files", i);
+                    persistAndPublishStatsThrottled(true);
                     return; // caller handles publishInterrupted
                 }
 
                 Path file = files.get(i);
                 try {
-                    ImportOutcome outcome = importOneFile(rootPath, importRootId, folderIdCache, file, buffer);
-                    switch (outcome) {
-                        case SKIPPED_UNCHANGED -> skipped++;
-                        case REJECTED_UNSUPPORTED_CODEC -> rejectedCodec++;
-                        default -> imported++;
+                    FileImportResult result = importOneFile(rootPath, importRootId, folderIdCache, file, buffer);
+                    switch (result.outcome()) {
+                        case SKIPPED_UNCHANGED -> {
+                            skipped++;
+                            recordOutcome(result);
+                        }
+                        case REJECTED_UNSUPPORTED_CODEC -> {
+                            rejectedCodec++;
+                            recordOutcome(result);
+                        }
+                        default -> {
+                            imported++;
+                            recordOutcome(result);
+                        }
                     }
                 } catch (Exception e) {
                     errors++;
                     log.error("Failed to import {}", file, e);
+                    if (statsTracker != null) {
+                        statsTracker.recordFailure(file.toString(), e.getMessage() == null ? e.toString() : e.getMessage());
+                    }
                 }
 
                 if (buffer.size() >= DB_FLUSH_BATCH_SIZE) {
@@ -116,6 +211,7 @@ public class ImportJob extends BackgroundJob {
                 }
                 publishProgressThrottled("Reading files", i + 1, files.size(),
                         file.toString(), i == files.size() - 1);
+                persistAndPublishStatsThrottled(i == files.size() - 1);
             }
             flush(buffer);
 
@@ -126,16 +222,44 @@ public class ImportJob extends BackgroundJob {
                     .formatted(imported, skipped, rejectedCodec, errors));
         } catch (Exception e) {
             log.error("Import scan of {} failed", rootPathString, e);
+            sessionHadRootLevelFailure = true;
+            if (statsTracker != null) {
+                statsTracker.recordFailure(rootPathString, e.getMessage() == null ? e.toString() : e.getMessage());
+            }
             publishFailed(e);
+        }
+    }
+
+    private void recordOutcome(FileImportResult result) {
+        if (statsTracker == null) {
+            return;
+        }
+        switch (result.outcome()) {
+            case SKIPPED_UNCHANGED -> statsTracker.recordSkippedUnchanged();
+            case REJECTED_UNSUPPORTED_CODEC -> statsTracker.recordUnsupportedCodec();
+            case IMPORTED -> {
+                if (result.video()) {
+                    statsTracker.recordVideoImported(result.fileSize());
+                } else {
+                    statsTracker.recordPhotoImported(result.fileSize());
+                }
+            }
+            case UPDATED -> {
+                if (result.video()) {
+                    statsTracker.recordVideoUpdated(result.fileSize());
+                } else {
+                    statsTracker.recordPhotoUpdated(result.fileSize());
+                }
+            }
         }
     }
 
     // ── File-level import (metadata only — no thumbnail generation) ───────────
 
-    private ImportOutcome importOneFile(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
-                                        Path file, List<Query> buffer) throws IOException {
-        String filename  = file.getFileName()
-                               .toString();
+    private FileImportResult importOneFile(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
+                                           Path file, List<Query> buffer) throws IOException {
+        String filename = file.getFileName()
+                              .toString();
         String extension = FileUtils.extensionOf(filename);
 
         if (VIDEO_EXTENSIONS.contains(extension)) {
@@ -144,9 +268,9 @@ public class ImportJob extends BackgroundJob {
         return importOnePhoto(rootPath, importRootId, folderIdCache, file, filename, extension, buffer);
     }
 
-    private ImportOutcome importOnePhoto(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
-                                         Path file, String filename, String extension,
-                                         List<Query> buffer) throws IOException {
+    private FileImportResult importOnePhoto(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
+                                            Path file, String filename, String extension,
+                                            List<Query> buffer) throws IOException {
         long folderId = resolveFolderId(importRootId, rootPath, file.getParent(), folderIdCache);
         String absolutePath = file.toAbsolutePath()
                                   .toString();
@@ -161,7 +285,7 @@ public class ImportJob extends BackgroundJob {
             // partial AI progress from a previous run is preserved.
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
                                                                     .id(), now));
-            return ImportOutcome.SKIPPED_UNCHANGED;
+            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, false, fileSize);
         }
 
         ExtractedMetadata metadata = metadataExtractor.extract(file, extension);
@@ -177,7 +301,7 @@ public class ImportJob extends BackgroundJob {
                     metadata.exifExtraJson(), now));
             queuePreview(photoId, metadata, buffer);
             buffer.add(mediaRepository.resetAiFields(photoId));
-            return ImportOutcome.UPDATED;
+            return new FileImportResult(ImportOutcome.UPDATED, false, fileSize);
         }
 
         // Brand-new media: insert returns the generated ID immediately.
@@ -188,7 +312,7 @@ public class ImportJob extends BackgroundJob {
                 metadata.cameraModel(), metadata.lensModel(),
                 metadata.exifExtraJson(), now);
         queuePreview(photoId, metadata, buffer);
-        return ImportOutcome.IMPORTED;
+        return new FileImportResult(ImportOutcome.IMPORTED, false, fileSize);
     }
 
     /**
@@ -197,9 +321,9 @@ public class ImportJob extends BackgroundJob {
      * codec {@link VideoMetadataExtractor} rejects is neither inserted nor updated — it's simply
      * reported as skipped, same file-level isolation as a corrupt/unreadable photo.
      */
-    private ImportOutcome importOneVideo(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
-                                         Path file, String filename, String extension,
-                                         List<Query> buffer) throws IOException {
+    private FileImportResult importOneVideo(Path rootPath, long importRootId, Map<Path, Long> folderIdCache,
+                                            Path file, String filename, String extension,
+                                            List<Query> buffer) throws IOException {
         long folderId = resolveFolderId(importRootId, rootPath, file.getParent(), folderIdCache);
         String absolutePath = file.toAbsolutePath()
                                   .toString();
@@ -212,7 +336,7 @@ public class ImportJob extends BackgroundJob {
                                             .fileSize() == fileSize) {
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
                                                                     .id(), now));
-            return ImportOutcome.SKIPPED_UNCHANGED;
+            return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, true, fileSize);
         }
 
         ExtractedVideoMetadata metadata;
@@ -221,7 +345,7 @@ public class ImportJob extends BackgroundJob {
         } catch (UnsupportedVideoCodecException e) {
             // Reported in the ENDED summary's "unsupported codec" count — see runImportInternal.
             log.warn("Skipping unsupported video codec: {}", e.getMessage());
-            return ImportOutcome.REJECTED_UNSUPPORTED_CODEC;
+            return new FileImportResult(ImportOutcome.REJECTED_UNSUPPORTED_CODEC, true, fileSize);
         }
 
         if (existing.isPresent()) {
@@ -233,7 +357,7 @@ public class ImportJob extends BackgroundJob {
                     metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
                     metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now));
             buffer.add(mediaRepository.resetAiFields(videoId));
-            return ImportOutcome.UPDATED;
+            return new FileImportResult(ImportOutcome.UPDATED, true, fileSize);
         }
 
         mediaRepository.insertVideo(folderId, absolutePath, filename, extension, fileSize,
@@ -241,7 +365,7 @@ public class ImportJob extends BackgroundJob {
                 metadata.captureDate(), metadata.captureDateSource(),
                 metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
                 metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now);
-        return ImportOutcome.IMPORTED;
+        return new FileImportResult(ImportOutcome.IMPORTED, true, fileSize);
     }
 
     /**
@@ -293,10 +417,11 @@ public class ImportJob extends BackgroundJob {
         buffer.clear();
     }
 
-    private List<Path> scan(Path rootPath) throws IOException {
-        List<Path> found = new ArrayList<>(APPROXIMATE_LIBRARY_SIZE);
-        Files.walkFileTree(rootPath, new FileCollectingVisitor(SUPPORTED_EXTENSIONS, found));
-        return found;
+    private ScanResult scan(Path rootPath) throws IOException {
+        List<Path>            found   = new ArrayList<>(APPROXIMATE_LIBRARY_SIZE);
+        FileCollectingVisitor visitor = new FileCollectingVisitor(SUPPORTED_EXTENSIONS, found);
+        Files.walkFileTree(rootPath, visitor);
+        return new ScanResult(found, visitor.getUnsupportedExtensionCount());
     }
 
     @Override
@@ -304,5 +429,11 @@ public class ImportJob extends BackgroundJob {
         return IMPORT_SCAN;
     }
 
+    /**
+     * One file's import result, carrying just enough beyond {@link ImportOutcome} for
+     * {@link #recordOutcome} to feed the right counters on {@link ImportStatsTracker}.
+     */
+    private record FileImportResult(ImportOutcome outcome, boolean video, long fileSize) {}
 
+    private record ScanResult(List<Path> files, long unsupportedExtensionCount) {}
 }

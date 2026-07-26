@@ -28,6 +28,8 @@ public class AddFilesJob extends BackgroundJob {
     @Override
     public void runImpl() {
         publishStarted("Preparing to add files…");
+        ImportJobType jobType        = request.copyToDestination() ? ImportJobType.COPY : ImportJobType.NEW_ROOT;
+        boolean       sessionStarted = false;
         try {
             List<String> scanRoots;
 
@@ -43,11 +45,18 @@ public class AddFilesJob extends BackgroundJob {
                 scanRoots = request.sourcePaths();
             }
 
+            // Stats session covers every root below, whether copied-to or in-place — see
+            // ImportStatsTracker; started only now that we know the *effective* scan roots
+            // (post-copy destinations, not the original source paths).
+            importJob.beginStatsSession(jobType, scanRoots);
+            sessionStarted = true;
+
             // ── Phase 2: import every effective root via ImportService ─────────
             publishInProgress("Scanning imported files…", 0, scanRoots.size());
             for (int i = 0; i < scanRoots.size(); i++) {
                 if (isInterruptRequested()) {
                     publishInterrupted();
+                    importJob.finishStatsSession(true);
                     return;
                 }
                 String root = scanRoots.get(i);
@@ -63,6 +72,7 @@ public class AddFilesJob extends BackgroundJob {
                  */
                 importJob.runImportInternal(root);
             }
+            importJob.finishStatsSession(false);
 
             publishEnded("Files added successfully");
 
@@ -78,6 +88,9 @@ public class AddFilesJob extends BackgroundJob {
 
         } catch (Exception e) {
             log.error("AddFilesService failed", e);
+            if (sessionStarted) {
+                importJob.finishStatsSession(false);
+            }
             publishFailed(e);
         }
     }

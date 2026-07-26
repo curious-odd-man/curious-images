@@ -15,6 +15,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Face;
 import com.github.curiousoddman.curious_images.dbobj.tables.FaceEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.FlywaySchemaHistory;
 import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
+import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
@@ -101,6 +102,11 @@ public class Tables {
      * The table <code>public.FOLDER</code>.
      */
     public static final Folder FOLDER = Folder.FOLDER;
+
+    /**
+     * The table <code>public.IMPORT_JOB_STATS</code>.
+     */
+    public static final ImportJobStats IMPORT_JOB_STATS = ImportJobStats.IMPORT_JOB_STATS;
 
     /**
      * The table <code>public.IMPORT_ROOT</code>.

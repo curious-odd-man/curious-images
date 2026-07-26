@@ -5,12 +5,15 @@ import com.github.curiousoddman.curious_images.dbobj.tables.records.FolderRecord
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportRootRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.PersonRecord;
 import com.github.curiousoddman.curious_images.event.model.AiPipelineCompleteEvent;
+import com.github.curiousoddman.curious_images.event.model.ImportStatsUpdatedEvent;
 import com.github.curiousoddman.curious_images.event.model.LibraryUpdatedEvent;
 import com.github.curiousoddman.curious_images.event.model.TreeViewUpdateEvent;
 import com.github.curiousoddman.curious_images.event.payload.TreeViewUpdatePayload;
+import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.model.TimelineData;
 import com.github.curiousoddman.curious_images.persistence.AlbumRepository;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
+import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.persistence.PersonRepository;
@@ -51,6 +54,7 @@ public class TreeManager {
     private final MediaRepository  mediaRepository;
     private final AlbumRepository  albumRepository;
     private final PersonRepository     personRepository;
+    private final ImportJobStatsRepository importJobStatsRepository;
 
     private TreeView<LibraryTreeNode> libraryTreeView;
 
@@ -74,6 +78,33 @@ public class TreeManager {
             rootItems.add(folderRootItem);
         }
         return rootItems;
+    }
+
+    /**
+     * The "Last Import" node — sibling of the IMPORT_ROOT entries built above, but always present
+     * (even before any import has ever run) and payload-less like DUPLICATES_FILE_ROOT: selecting
+     * it shows the Last Import stats view (see {@code LibraryController#onTreeSelectionChanged}
+     * and {@code ImportStatsController}), it doesn't drill into anything itself.
+     */
+    public TreeItem<LibraryTreeNode> buildImportStatsItem() {
+        String label = importStatsLabel(importJobStatsRepository.findLast()
+                                                                 .orElse(null));
+        return new TreeItem<>(new LibraryTreeNode(label, null, LibraryTreeNode.NodeType.IMPORT_STATS));
+    }
+
+    private String importStatsLabel(ImportJobStats stats) {
+        if (stats == null) {
+            return "Last Import";
+        }
+        String suffix = switch (stats.status()) {
+            case RUNNING -> "Running…";
+            case COMPLETED -> "Completed";
+            case FAILED -> "Failed";
+            case INTERRUPTED -> "Interrupted";
+            case INTERRUPT_REQUESTED -> "Stopping…";
+            case NEVER_RUN -> "Never run";
+        };
+        return "Last Import (" + suffix + ")";
     }
 
     public List<TreeItem<LibraryTreeNode>> buildTimelineItems() {
@@ -191,6 +222,8 @@ public class TreeManager {
                         new LibraryTreeNode("Folders", null, LibraryTreeNode.NodeType.FOLDERS_ROOT));
                 foldersRoot.getChildren()
                            .setAll(folderItems);
+                foldersRoot.getChildren()
+                           .add(buildImportStatsItem());
                 foldersRoot.setExpanded(true);
 
                 TreeItem<LibraryTreeNode> timelineRoot = new TreeItem<>(
@@ -258,6 +291,36 @@ public class TreeManager {
                         .getChildren()
                         .setAll(personItems);
             });
+        });
+    }
+
+    /**
+     * Keeps the "Last Import" tree item's label in sync with the run in progress — no tree
+     * rebuild, just updates that one node's {@code displayName}. The stats *view* itself (if
+     * currently open) refreshes independently off the same event, see {@code ImportStatsController}.
+     */
+    @EventListener
+    public void onImportStatsUpdated(ImportStatsUpdatedEvent event) {
+        String label = importStatsLabel(event.getStats());
+        runOnFxThread(() -> {
+            TreeItem<LibraryTreeNode> root = libraryTreeView.getRoot();
+            if (root == null) {
+                return;
+            }
+            for (TreeItem<LibraryTreeNode> section : root.getChildren()) {
+                if (section.getValue() == null || section.getValue()
+                                                          .type() != LibraryTreeNode.NodeType.FOLDERS_ROOT) {
+                    continue;
+                }
+                for (TreeItem<LibraryTreeNode> child : section.getChildren()) {
+                    if (child.getValue() != null && child.getValue()
+                                                         .type() == LibraryTreeNode.NodeType.IMPORT_STATS) {
+                        LibraryTreeNode value = child.getValue();
+                        child.setValue(new LibraryTreeNode(label, value.payload(), value.type()));
+                        return;
+                    }
+                }
+            }
         });
     }
 

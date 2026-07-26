@@ -21,7 +21,9 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignM;
  *                    duplicates-review view (see {@code LibraryController#onTreeSelectionChanged}) —
  *                    the file-level one for DUPLICATES_FILE_ROOT, the folder-level one for
  *                    DUPLICATES_FOLDER_ROOT. DUPLICATES_ROOT itself is just the grouping parent of
- *                    those two, exactly like ALBUMS_ROOT groups the album kinds.
+ *                    those two, exactly like ALBUMS_ROOT groups the album kinds. IMPORT_STATS is
+ *                    the same kind of special case: {@code null} payload, but selecting it shows
+ *                    the Last Import stats view (see {@code ImportStatsController}).
  * @param type        kind of node — drives icon selection and selection behaviour
  */
 public record LibraryTreeNode(String displayName, NodePayload payload, NodeType type) {
@@ -31,6 +33,9 @@ public record LibraryTreeNode(String displayName, NodePayload payload, NodeType 
         FOLDERS_ROOT,
         IMPORT_ROOT,
         FOLDER,
+        // Last Import stats — a sibling of the IMPORT_ROOT entries under FOLDERS_ROOT, always
+        // present (even before any import has ever run) and kept live-updated while a job runs.
+        IMPORT_STATS,
         // Timeline
         TIMELINE_ROOT,
         TIMELINE_YEAR,
@@ -63,6 +68,7 @@ public record LibraryTreeNode(String displayName, NodePayload payload, NodeType 
             case FOLDERS_ROOT -> MaterialDesignF.FOLDER_MULTIPLE;
             case IMPORT_ROOT -> MaterialDesignD.DATABASE;
             case FOLDER -> MaterialDesignF.FOLDER;
+            case IMPORT_STATS -> MaterialDesignC.CHART_BOX;
             case TIMELINE_ROOT -> MaterialDesignC.CLOCK_OUTLINE;
             case TIMELINE_YEAR -> MaterialDesignC.CALENDAR_BLANK;
             case TIMELINE_MONTH -> MaterialDesignC.CALENDAR;

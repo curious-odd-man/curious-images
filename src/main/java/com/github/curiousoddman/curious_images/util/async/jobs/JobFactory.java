@@ -36,6 +36,7 @@ import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingReposito
 import com.github.curiousoddman.curious_images.persistence.FaceRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceThumbnailsRepository;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
+import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
@@ -54,9 +55,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JobFactory {
     private final DSLContext              dsl;
-    private final ImportRootRepository    importRootRepository;
-    private final FolderRepository        folderRepository;
-    private final MediaRepository         mediaRepository;
+    private final ImportRootRepository     importRootRepository;
+    private final FolderRepository         folderRepository;
+    private final MediaRepository          mediaRepository;
+    private final ImportJobStatsRepository importJobStatsRepository;
     private final ThumbnailRepository     thumbnailRepository;
     private final PhotoPreviewRepository  photoPreviewRepository;
     private final PhotoMetadataExtractor  photoMetadataExtractor;
@@ -102,6 +104,7 @@ public class JobFactory {
                 photoPreviewRepository,
                 photoMetadataExtractor,
                 videoMetadataExtractor,
+                importJobStatsRepository,
                 timeProvider,
                 paths
         );
