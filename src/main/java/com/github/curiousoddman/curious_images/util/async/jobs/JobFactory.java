@@ -39,6 +39,7 @@ import com.github.curiousoddman.curious_images.persistence.FaceThumbnailsReposit
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaHashRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.persistence.PhotoPreviewRepository;
 import com.github.curiousoddman.curious_images.persistence.PhotoTagRepository;
@@ -54,44 +55,45 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JobFactory {
-    private final DSLContext               dsl;
-    private final ImportRootRepository     importRootRepository;
-    private final FolderRepository         folderRepository;
-    private final MediaRepository          mediaRepository;
-    private final ThumbnailRepository      thumbnailRepository;
-    private final PhotoPreviewRepository   photoPreviewRepository;
-    private final PhotoMetadataExtractor   photoMetadataExtractor;
-    private final VideoMetadataExtractor   videoMetadataExtractor;
-    private final ThumbnailGenerator       thumbnailGenerator;
-    private final VideoThumbnailGenerator  videoThumbnailGenerator;
-    private final ImageUtils               imageUtils;
-    private final VideoFrameSampler        videoFrameSampler;
-    private final TimeProvider             timeProvider;
-    private final MediaHashRepository      photoHashRepository;
-    private final DuplicateJobRepository   duplicateJobRepository;
-    private final DuplicateGroupRepository duplicateGroupRepository;
-    private final PixelHasher              pixelHasher;
-    private final FileHasher               fileHasher;
-    private final FaceRepository           faceRepository;
-    private final FaceEmbeddingRepository  faceEmbeddingRepository;
-    private final ClipEmbeddingRepository  clipEmbeddingRepository;
-    private final RetinaFaceDetector       retinaFaceDetector;
-    private final ArcFaceEncoder           arcFaceEncoder;
-    private final FaceAligner              faceAligner;
-    private final ClipImageEncoder         clipImageEncoder;
-    private final ClipVectorIndex          clipVectorIndex;
-    private final FaceVectorIndex          faceVectorIndex;
-    private final PersonClusteringService  personClusteringService;
-    private final FaceThumbnailsRepository faceThumbnailsRepository;
-    private final AlbumRepository          albumRepository;
-    private final AlbumPhotoRepository     albumPhotoRepository;
-    private final AiConfig                 aiConfig;
-    private final ClusterRepository        clusterRepository;
-    private final PersonService            personService;
-    private final ModelPaths               modelPaths;
-    private final ClipTextEncoder          clipTextEncoder;
-    private final PhotoTagRepository       photoTagRepository;
-    private final StatsSessionFactory      statsSessionFactory;
+    private final DSLContext                  dsl;
+    private final ImportRootRepository        importRootRepository;
+    private final FolderRepository            folderRepository;
+    private final MediaRepository             mediaRepository;
+    private final ThumbnailRepository         thumbnailRepository;
+    private final PhotoPreviewRepository      photoPreviewRepository;
+    private final PhotoMetadataExtractor      photoMetadataExtractor;
+    private final VideoMetadataExtractor      videoMetadataExtractor;
+    private final ThumbnailGenerator          thumbnailGenerator;
+    private final VideoThumbnailGenerator     videoThumbnailGenerator;
+    private final ImageUtils                  imageUtils;
+    private final VideoFrameSampler           videoFrameSampler;
+    private final TimeProvider                timeProvider;
+    private final MediaHashRepository         photoHashRepository;
+    private final DuplicateJobRepository      duplicateJobRepository;
+    private final DuplicateGroupRepository    duplicateGroupRepository;
+    private final PixelHasher                 pixelHasher;
+    private final FileHasher                  fileHasher;
+    private final FaceRepository              faceRepository;
+    private final FaceEmbeddingRepository     faceEmbeddingRepository;
+    private final ClipEmbeddingRepository     clipEmbeddingRepository;
+    private final RetinaFaceDetector          retinaFaceDetector;
+    private final ArcFaceEncoder              arcFaceEncoder;
+    private final FaceAligner                 faceAligner;
+    private final ClipImageEncoder            clipImageEncoder;
+    private final ClipVectorIndex             clipVectorIndex;
+    private final FaceVectorIndex             faceVectorIndex;
+    private final PersonClusteringService     personClusteringService;
+    private final FaceThumbnailsRepository    faceThumbnailsRepository;
+    private final AlbumRepository             albumRepository;
+    private final AlbumPhotoRepository        albumPhotoRepository;
+    private final AiConfig                    aiConfig;
+    private final ClusterRepository           clusterRepository;
+    private final PersonService               personService;
+    private final ModelPaths                  modelPaths;
+    private final ClipTextEncoder             clipTextEncoder;
+    private final PhotoTagRepository          photoTagRepository;
+    private final StatsSessionFactory         statsSessionFactory;
+    private final MediaMetadataEditRepository mediaMetadataEditRepository;
 
     public ImportJob createImportJob(List<String> paths) {
         return new ImportJob(
@@ -99,6 +101,7 @@ public class JobFactory {
                 importRootRepository,
                 folderRepository,
                 mediaRepository,
+                mediaMetadataEditRepository,
                 photoPreviewRepository,
                 photoMetadataExtractor,
                 videoMetadataExtractor,

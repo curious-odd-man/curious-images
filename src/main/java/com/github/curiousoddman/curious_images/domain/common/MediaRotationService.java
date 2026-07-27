@@ -5,6 +5,7 @@ import com.github.curiousoddman.curious_images.domain.ai.PersonCorrectionService
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
 import com.github.curiousoddman.curious_images.model.Media;
+import com.github.curiousoddman.curious_images.model.Rotate;
 import com.github.curiousoddman.curious_images.persistence.ClipEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceRepository;
@@ -62,16 +63,6 @@ import java.util.function.IntUnaryOperator;
 @RequiredArgsConstructor
 public class MediaRotationService {
 
-    /**
-     * The three rotation deltas the context menu offers ("Rotate 90° CW / 90° CCW / 180°" — see
-     * {@code PhotoCellController}). {@link #rotateAndClearAiResults} normalizes the resulting angle into
-     * {0, 90, 180, 270} regardless of which delta is passed.
-     */
-    // FIXME: make enum
-    public static final int ROTATE_CW  = 90;
-    public static final int ROTATE_CCW = -90;
-    public static final int ROTATE_180 = 180;
-
     private final DSLContext                  dsl;
     private final MediaRepository             photoRepo;
     private final MediaMetadataEditRepository metadataEditRepository;
@@ -86,33 +77,33 @@ public class MediaRotationService {
 
     /**
      * @param mediaId      the media being rotated (photo or video)
-     * @param deltaDegrees one of {@link #ROTATE_CW}, {@link #ROTATE_CCW}, {@link #ROTATE_180} —
+     * @param deltaDegrees one of enum
      *                     any value is accepted and normalized, but the menu only ever offers
      *                     these three
      */
-    public void rotateAndClearAiResults(long mediaId, int deltaDegrees) {
-        applyRotation(mediaId, current -> ((current + deltaDegrees) % 360 + 360) % 360, EditType.RELATIVE);
+    public void rotateAndClearAiResults(long mediaId, Rotate deltaDegrees) {
+        applyRotation(mediaId, current -> ((current + deltaDegrees.getDegrees()) % 360 + 360) % 360, EditType.RELATIVE);
     }
 
     /**
      * Sets rotation to an absolute value (0/90/180/270) rather than adjusting the current one.
      */
-    public void rotateAbsolute(long mediaId, int absoluteDegrees) {
-        int normalizedTarget = ((absoluteDegrees % 360) + 360) % 360;
+    public void rotateAbsolute(long mediaId, Rotate absoluteDegrees) {
+        int normalizedTarget = ((absoluteDegrees.getDegrees() % 360) + 360) % 360;
         applyRotation(mediaId, current -> normalizedTarget, EditType.ABSOLUTE);
     }
 
     /**
      * Bulk relative rotation — applies the same delta to every media, each independently.
      */
-    public void rotateRelativeBulk(Collection<Long> mediaIds, int deltaDegrees) {
+    public void rotateRelativeBulk(Collection<Long> mediaIds, Rotate deltaDegrees) {
         mediaIds.forEach(id -> rotateAndClearAiResults(id, deltaDegrees));
     }
 
     /**
      * Bulk absolute rotation — sets every media to the same absolute value.
      */
-    public void rotateAbsoluteBulk(Collection<Long> mediaIds, int absoluteDegrees) {
+    public void rotateAbsoluteBulk(Collection<Long> mediaIds, Rotate absoluteDegrees) {
         mediaIds.forEach(id -> rotateAbsolute(id, absoluteDegrees));
     }
 
