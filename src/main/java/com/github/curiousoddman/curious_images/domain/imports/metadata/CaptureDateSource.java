@@ -9,5 +9,6 @@ public enum CaptureDateSource {
     EXIF_ORIGINAL,
     EXIF_DIGITIZED,
     CONTAINER_METADATA,
-    FILESYSTEM
+    FILESYSTEM,
+    MANUAL_EDIT
 }

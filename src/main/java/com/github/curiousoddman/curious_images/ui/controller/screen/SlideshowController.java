@@ -2,7 +2,7 @@ package com.github.curiousoddman.curious_images.ui.controller.screen;
 
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ThumbnailRecord;
-import com.github.curiousoddman.curious_images.domain.common.photo.PhotoRotationService;
+import com.github.curiousoddman.curious_images.domain.common.MediaRotationService;
 import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.bundle.SlideshowBundle;
 import com.github.curiousoddman.curious_images.persistence.ThumbnailRepository;
@@ -42,7 +42,7 @@ import static com.sun.javafx.util.Utils.runOnFxThread;
  *   <li>Show a warning badge when the source file is not found on disk.</li>
  *   <li>Left/right navigation (mouse buttons + keyboard arrows).</li>
  *   <li>Scroll-to-zoom around the cursor, drag-to-pan.</li>
- *   <li>Right-click context menu: rotate (see {@link PhotoRotationService}) / reveal in Explorer.</li>
+ *   <li>Right-click context menu: rotate (see {@link MediaRotationService}) / reveal in Explorer.</li>
  *   <li>Auto-hide navigation controls after 2 s of mouse inactivity.</li>
  *   <li>Close on Esc or the ✕ button.</li>
  * </ul>
@@ -440,7 +440,7 @@ public class SlideshowController implements Initializable {
 
     /**
      * Rotates the currently-displayed media. The DB write + AI-data wipe (see
-     * {@link PhotoRotationService}) runs off the FX thread; once it's done, this media's
+     * {@link MediaRotationService}) runs off the FX thread; once it's done, this media's
      * in-memory {@link MediaPhotoRecord#getOrientation()} is updated and the full-res view is
      * re-rotated immediately, without waiting for the async thumbnail regeneration job to finish.
      */

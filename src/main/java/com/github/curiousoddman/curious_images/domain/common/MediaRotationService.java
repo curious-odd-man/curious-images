@@ -1,13 +1,16 @@
-package com.github.curiousoddman.curious_images.domain.common.photo;
+package com.github.curiousoddman.curious_images.domain.common;
 
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FaceRecord;
-import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.domain.ai.PersonCorrectionService;
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
+import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.persistence.ClipEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository.EditType;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository.Field;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.util.TimeProvider;
 import com.github.curiousoddman.curious_images.util.async.jobs.JobManager;
@@ -18,21 +21,25 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Backs the media grid's right-click "Rotate" actions (see {@code PhotoCellController},
- * {@code DuplicatesController}, {@code SlideshowController}).
+ * {@code DuplicatesController}, {@code SlideshowController}) and the metadata-edit UI's rotation
+ * controls, for both photos and videos.
  * <p>
  * A media whose rotation is being manually corrected was, by definition, scanned by the AI
  * pipeline with the wrong orientation — its face bounding boxes, face crops, face/CLIP embeddings,
  * and any resulting cluster membership are all now meaningless. Rather than leave stale AI data
- * around waiting to be silently overwritten by a future pipeline run, {@link #rotateAndClearAiResults} does all of
- * the following for one media:
+ * around waiting to be silently overwritten by a future pipeline run, {@link #applyRotation} does
+ * all of the following for one media:
  * <ol>
- *   <li>updates {@code PHOTO.ORIENTATION} to the new (normalized 0/90/180/270) value;</li>
+ *   <li>updates {@code PHOTO.ORIENTATION} or {@code VIDEO.ROTATION} to the new (normalized
+ *       0/90/180/270) value, and records the change in {@code MEDIA_METADATA_EDIT};</li>
  *   <li>resets every {@code AI_*_DONE} flag (+ clears the error/retry count) so the media is
  *       picked up by the next {@code AiPipelineJob} run as if newly imported;</li>
  *   <li>hard-deletes the media's existing {@code FACE} / {@code FACE_EMBEDDING} /
@@ -53,44 +60,76 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PhotoRotationService {
+public class MediaRotationService {
 
     /**
      * The three rotation deltas the context menu offers ("Rotate 90° CW / 90° CCW / 180°" — see
      * {@code PhotoCellController}). {@link #rotateAndClearAiResults} normalizes the resulting angle into
      * {0, 90, 180, 270} regardless of which delta is passed.
      */
+    // FIXME: make enum
     public static final int ROTATE_CW  = 90;
     public static final int ROTATE_CCW = -90;
     public static final int ROTATE_180 = 180;
 
-    private final DSLContext              dsl;
-    private final MediaRepository         photoRepo;
-    private final FaceRepository          faceRepo;
-    private final FaceEmbeddingRepository faceEmbeddingRepo;
-    private final ClipEmbeddingRepository clipEmbeddingRepo;
-    private final PersonCorrectionService personCorrectionService;
-    private final FaceVectorIndex         faceVectorIndex;
-    private final ClipVectorIndex         clipVectorIndex;
-    private final JobManager              jobManager;
-    private final TimeProvider            timeProvider;
+    private final DSLContext                  dsl;
+    private final MediaRepository             photoRepo;
+    private final MediaMetadataEditRepository metadataEditRepository;
+    private final FaceRepository              faceRepo;
+    private final FaceEmbeddingRepository     faceEmbeddingRepo;
+    private final ClipEmbeddingRepository     clipEmbeddingRepo;
+    private final PersonCorrectionService     personCorrectionService;
+    private final FaceVectorIndex             faceVectorIndex;
+    private final ClipVectorIndex             clipVectorIndex;
+    private final JobManager                  jobManager;
+    private final TimeProvider                timeProvider;
 
     /**
-     * @param mediaId      the media being rotated
+     * @param mediaId      the media being rotated (photo or video)
      * @param deltaDegrees one of {@link #ROTATE_CW}, {@link #ROTATE_CCW}, {@link #ROTATE_180} —
      *                     any value is accepted and normalized, but the menu only ever offers
      *                     these three
      */
     public void rotateAndClearAiResults(long mediaId, int deltaDegrees) {
-        MediaPhotoRecord photo = photoRepo.findById(mediaId)
-                                          .orElse(null);
-        if (photo == null) {
+        applyRotation(mediaId, current -> ((current + deltaDegrees) % 360 + 360) % 360, EditType.RELATIVE);
+    }
+
+    /**
+     * Sets rotation to an absolute value (0/90/180/270) rather than adjusting the current one.
+     */
+    public void rotateAbsolute(long mediaId, int absoluteDegrees) {
+        int normalizedTarget = ((absoluteDegrees % 360) + 360) % 360;
+        applyRotation(mediaId, current -> normalizedTarget, EditType.ABSOLUTE);
+    }
+
+    /**
+     * Bulk relative rotation — applies the same delta to every media, each independently.
+     */
+    public void rotateRelativeBulk(Collection<Long> mediaIds, int deltaDegrees) {
+        mediaIds.forEach(id -> rotateAndClearAiResults(id, deltaDegrees));
+    }
+
+    /**
+     * Bulk absolute rotation — sets every media to the same absolute value.
+     */
+    public void rotateAbsoluteBulk(Collection<Long> mediaIds, int absoluteDegrees) {
+        mediaIds.forEach(id -> rotateAbsolute(id, absoluteDegrees));
+    }
+
+    /**
+     * Shared implementation for both relative and absolute rotation, photo or video. {@code
+     * newDegreesFn} computes the target absolute angle from the current one (ignored for
+     * absolute edits, applied as a delta for relative ones).
+     */
+    private void applyRotation(long mediaId, IntUnaryOperator newDegreesFn, EditType editType) {
+        Media media = photoRepo.findMediaById(mediaId);
+        if (media == null) {
             log.warn("rotate: media {} no longer exists", mediaId);
             return;
         }
 
-        int current    = Objects.requireNonNullElse(photo.getOrientation(), 0);
-        int normalized = ((current + deltaDegrees) % 360 + 360) % 360;
+        int current    = Objects.requireNonNullElse(media.getRotationDegrees(), 0);
+        int normalized = newDegreesFn.applyAsInt(current);
 
         List<FaceRecord> faces = faceRepo.findByMediaId(mediaId);
         List<Long> faceIds = faces.stream()
@@ -108,10 +147,16 @@ public class PhotoRotationService {
         LocalDateTime now = timeProvider.now();
         dsl.transaction(cfg -> {
             DSLContext ctx = cfg.dsl();
-            photoRepo.updatePhotoOrientationAndResetAi(ctx, mediaId, normalized, now);
+            if (media.isVideo()) {
+                photoRepo.updateVideoRotationAndResetAi(ctx, mediaId, normalized, now);
+            } else {
+                photoRepo.updatePhotoOrientationAndResetAi(ctx, mediaId, normalized, now);
+            }
             faceEmbeddingRepo.deleteByFaceIds(ctx, faceIds);
             faceRepo.deleteByMediaId(ctx, mediaId);
             clipEmbeddingRepo.deleteByPhotoId(ctx, mediaId);
+            metadataEditRepository.recordEdit(ctx, mediaId, Field.ROTATION,
+                    String.valueOf(current), String.valueOf(normalized), editType, now);
         });
 
         deleteFaceThumbnailFiles(faces);

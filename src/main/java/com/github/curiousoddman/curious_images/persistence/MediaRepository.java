@@ -200,6 +200,77 @@ public class MediaRepository {
         );
     }
 
+    /**
+     * Rescan-protected counterpart to {@link #updateVideoMetadataQuery} — same fields, but skips
+     * {@code CAPTURE_DATE} and/or {@code ROTATION} when the caller ({@code ImportJob}, consulting
+     * {@code MediaMetadataEditRepository}) says the user has manually edited that field for this
+     * media. Built via {@code UpdateQuery} rather than the fluent {@code .set(...)} chain so fields
+     * can be conditionally included without generic-type gymnastics.
+     */
+    public List<Query> updateVideoMetadataQueryProtected(long mediaId, long fileSize, Integer width, Integer height,
+                                                         LocalDateTime captureDate, CaptureDateSource captureDateSource,
+                                                         Long durationMs, String codec, Double frameRate, int rotationDegrees,
+                                                         Double gpsLat, Double gpsLon, Double gpsAltitude, LocalDateTime now,
+                                                         boolean captureDateProtected, boolean rotationProtected) {
+        var mediaUpdate = dsl.updateQuery(MEDIA);
+        mediaUpdate.addValue(MEDIA.FILE_SIZE, fileSize);
+        mediaUpdate.addValue(MEDIA.WIDTH, width);
+        mediaUpdate.addValue(MEDIA.HEIGHT, height);
+        mediaUpdate.addValue(MEDIA.GPS_LAT, gpsLat);
+        mediaUpdate.addValue(MEDIA.GPS_LON, gpsLon);
+        mediaUpdate.addValue(MEDIA.GPS_ALTITUDE, gpsAltitude);
+        mediaUpdate.addValue(MEDIA.LAST_SEEN_AT, now);
+        if (!captureDateProtected) {
+            mediaUpdate.addValue(MEDIA.CAPTURE_DATE, captureDate);
+            mediaUpdate.addValue(MEDIA.CAPTURE_DATE_SOURCE, sourceName(captureDateSource));
+        }
+        mediaUpdate.addConditions(MEDIA.ID.eq(mediaId));
+
+        var videoUpdate = dsl.updateQuery(VIDEO);
+        videoUpdate.addValue(VIDEO.DURATION_MS, durationMs);
+        videoUpdate.addValue(VIDEO.CODEC, codec);
+        videoUpdate.addValue(VIDEO.FRAME_RATE, frameRate);
+        if (!rotationProtected) {
+            videoUpdate.addValue(VIDEO.ROTATION, rotationDegrees);
+        }
+        videoUpdate.addConditions(VIDEO.ID.eq(mediaId));
+
+        return List.of(mediaUpdate, videoUpdate);
+    }
+
+    /**
+     * Rescan-protected counterpart to {@link #updateMetadataQuery} — see
+     * {@link #updateVideoMetadataQueryProtected} for the rationale and pattern.
+     */
+    public List<Query> updateMetadataQueryProtected(long mediaId, long fileSize, Integer width, Integer height,
+                                                    LocalDateTime captureDate, CaptureDateSource captureDateSource,
+                                                    int orientationDegrees, String cameraMake, String cameraModel, String lensModel,
+                                                    String exifExtraJson, LocalDateTime now,
+                                                    boolean captureDateProtected, boolean orientationProtected) {
+        var mediaUpdate = dsl.updateQuery(MEDIA);
+        mediaUpdate.addValue(MEDIA.FILE_SIZE, fileSize);
+        mediaUpdate.addValue(MEDIA.WIDTH, width);
+        mediaUpdate.addValue(MEDIA.HEIGHT, height);
+        mediaUpdate.addValue(MEDIA.CAMERA_MAKE, cameraMake);
+        mediaUpdate.addValue(MEDIA.CAMERA_MODEL, cameraModel);
+        mediaUpdate.addValue(MEDIA.LAST_SEEN_AT, now);
+        if (!captureDateProtected) {
+            mediaUpdate.addValue(MEDIA.CAPTURE_DATE, captureDate);
+            mediaUpdate.addValue(MEDIA.CAPTURE_DATE_SOURCE, sourceName(captureDateSource));
+        }
+        if (!orientationProtected) {
+            mediaUpdate.addValue(PHOTO.ORIENTATION, orientationDegrees);
+        }
+        mediaUpdate.addConditions(MEDIA.ID.eq(mediaId));
+
+        var photoUpdate = dsl.updateQuery(PHOTO);
+        photoUpdate.addValue(PHOTO.LENS_MODEL, lensModel);
+        photoUpdate.addValue(PHOTO.EXIF_EXTRA, toJson(exifExtraJson));
+        photoUpdate.addConditions(PHOTO.ID.eq(mediaId));
+
+        return List.of(mediaUpdate, photoUpdate);
+    }
+
     public Query touchLastSeenAtQuery(long mediaId, LocalDateTime now) {
         return dsl.update(MEDIA)
                   .set(MEDIA.LAST_SEEN_AT, now)
@@ -236,6 +307,23 @@ public class MediaRepository {
            .where(PHOTO.ID.eq(mediaId))
            .execute();
 
+        resetAiFieldsForRotation(ctx, mediaId, now);
+    }
+
+    /**
+     * Video counterpart to {@link #updatePhotoOrientationAndResetAi} — same AI-reset rationale
+     * applies: a rotated video invalidates any face/CLIP data already extracted from its frames.
+     */
+    public void updateVideoRotationAndResetAi(DSLContext ctx, long mediaId, int newRotationDegrees, LocalDateTime now) {
+        ctx.update(VIDEO)
+           .set(VIDEO.ROTATION, newRotationDegrees)
+           .where(VIDEO.ID.eq(mediaId))
+           .execute();
+
+        resetAiFieldsForRotation(ctx, mediaId, now);
+    }
+
+    private void resetAiFieldsForRotation(DSLContext ctx, long mediaId, LocalDateTime now) {
         ctx.update(MEDIA)
            .set(MEDIA.AI_FACE_DETECT_DONE, false)
            .set(MEDIA.AI_FACE_EMBED_DONE, false)
@@ -244,6 +332,20 @@ public class MediaRepository {
            .set(MEDIA.AI_LAST_ERROR, (String) null)
            .set(MEDIA.AI_RETRY_COUNT, (short) 0)
            .set(MEDIA.AI_UPDATED_AT, now)
+           .where(MEDIA.ID.eq(mediaId))
+           .execute();
+    }
+
+    /**
+     * Manual capture-date correction — {@code MEDIA} is shared by both photo and video, so this is
+     * already type-agnostic, unlike rotation. No AI-field reset: capture date doesn't affect pixel
+     * content, faces, or embeddings. Sets {@code CAPTURE_DATE_SOURCE} to {@code MANUAL_EDIT} so a
+     * future rescan can tell this value came from the user, not extraction.
+     */
+    public void updateCaptureDate(DSLContext ctx, long mediaId, LocalDateTime newCaptureDate) {
+        ctx.update(MEDIA)
+           .set(MEDIA.CAPTURE_DATE, newCaptureDate)
+           .set(MEDIA.CAPTURE_DATE_SOURCE, CaptureDateSource.MANUAL_EDIT.name())
            .where(MEDIA.ID.eq(mediaId))
            .execute();
     }

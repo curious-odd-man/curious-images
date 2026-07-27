@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
+import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaPhoto;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaTag;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaVideo;
@@ -144,6 +145,11 @@ public class Public extends SchemaImpl {
     public final MediaHash MEDIA_HASH = MediaHash.MEDIA_HASH;
 
     /**
+     * The table <code>public.MEDIA_METADATA_EDIT</code>.
+     */
+    public final MediaMetadataEdit MEDIA_METADATA_EDIT = MediaMetadataEdit.MEDIA_METADATA_EDIT;
+
+    /**
      * The table <code>public.MEDIA_PHOTO</code>.
      */
     public final MediaPhoto MEDIA_PHOTO = MediaPhoto.MEDIA_PHOTO;
@@ -230,6 +236,7 @@ public class Public extends SchemaImpl {
             ImportRoot.IMPORT_ROOT,
             Media.MEDIA,
             MediaHash.MEDIA_HASH,
+            MediaMetadataEdit.MEDIA_METADATA_EDIT,
             MediaPhoto.MEDIA_PHOTO,
             MediaTag.MEDIA_TAG,
             MediaVideo.MEDIA_VIDEO,

@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
+import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaTag;
 import com.github.curiousoddman.curious_images.dbobj.tables.PendingAction;
 import com.github.curiousoddman.curious_images.dbobj.tables.Person;
@@ -44,6 +45,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobFil
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobStatsRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportRootRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaHashRecord;
+import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaMetadataEditRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaTagRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.PendingActionRecord;
@@ -105,6 +107,7 @@ public class Keys {
     public static final UniqueKey<MediaRecord> CONSTRAINT_4 = Internal.createUniqueKey(Media.MEDIA, DSL.name("CONSTRAINT_4"), new TableField[] { Media.MEDIA.ID }, true);
     public static final UniqueKey<MediaRecord> CONSTRAINT_45D = Internal.createUniqueKey(Media.MEDIA, DSL.name("CONSTRAINT_45D"), new TableField[] { Media.MEDIA.ABSOLUTE_PATH }, true);
     public static final UniqueKey<MediaHashRecord> CONSTRAINT_9 = Internal.createUniqueKey(MediaHash.MEDIA_HASH, DSL.name("CONSTRAINT_9"), new TableField[] { MediaHash.MEDIA_HASH.MEDIA_ID }, true);
+    public static final UniqueKey<MediaMetadataEditRecord> CONSTRAINT_7D = Internal.createUniqueKey(MediaMetadataEdit.MEDIA_METADATA_EDIT, DSL.name("CONSTRAINT_7D"), new TableField[] { MediaMetadataEdit.MEDIA_METADATA_EDIT.ID }, true);
     public static final UniqueKey<MediaTagRecord> CONSTRAINT_25C0 = Internal.createUniqueKey(MediaTag.MEDIA_TAG, DSL.name("CONSTRAINT_25C0"), new TableField[] { MediaTag.MEDIA_TAG.TAG_ID, MediaTag.MEDIA_TAG.MEDIA_ID }, true);
     public static final UniqueKey<PendingActionRecord> CONSTRAINT_7 = Internal.createUniqueKey(PendingAction.PENDING_ACTION, DSL.name("CONSTRAINT_7"), new TableField[] { PendingAction.PENDING_ACTION.ID }, true);
     public static final UniqueKey<PersonRecord> CONSTRAINT_8 = Internal.createUniqueKey(Person.PERSON, DSL.name("CONSTRAINT_8"), new TableField[] { Person.PERSON.ID }, true);
@@ -135,6 +138,7 @@ public class Keys {
     public static final ForeignKey<ImportJobFileIssueRecord, ImportJobStatsRecord> FK_IMPORT_JOB_FILE_ISSUE_RUN = Internal.createForeignKey(ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE, DSL.name("FK_IMPORT_JOB_FILE_ISSUE_RUN"), new TableField[] { ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE.RUN_ID }, Keys.CONSTRAINT_B6F, new TableField[] { ImportJobStats.IMPORT_JOB_STATS.ID }, true);
     public static final ForeignKey<MediaRecord, FolderRecord> CONSTRAINT_45 = Internal.createForeignKey(Media.MEDIA, DSL.name("CONSTRAINT_45"), new TableField[] { Media.MEDIA.FOLDER_ID }, Keys.CONSTRAINT_7B, new TableField[] { Folder.FOLDER.ID }, true);
     public static final ForeignKey<MediaHashRecord, MediaRecord> CONSTRAINT_92 = Internal.createForeignKey(MediaHash.MEDIA_HASH, DSL.name("CONSTRAINT_92"), new TableField[] { MediaHash.MEDIA_HASH.MEDIA_ID }, Keys.CONSTRAINT_4, new TableField[] { Media.MEDIA.ID }, true);
+    public static final ForeignKey<MediaMetadataEditRecord, MediaRecord> CONSTRAINT_7D7 = Internal.createForeignKey(MediaMetadataEdit.MEDIA_METADATA_EDIT, DSL.name("CONSTRAINT_7D7"), new TableField[] { MediaMetadataEdit.MEDIA_METADATA_EDIT.MEDIA_ID }, Keys.CONSTRAINT_4, new TableField[] { Media.MEDIA.ID }, true);
     public static final ForeignKey<MediaTagRecord, TagEmbeddingRecord> CONSTRAINT_25 = Internal.createForeignKey(MediaTag.MEDIA_TAG, DSL.name("CONSTRAINT_25"), new TableField[] { MediaTag.MEDIA_TAG.TAG_ID }, Keys.CONSTRAINT_7BE, new TableField[] { TagEmbedding.TAG_EMBEDDING.ID }, true);
     public static final ForeignKey<MediaTagRecord, MediaRecord> CONSTRAINT_25C = Internal.createForeignKey(MediaTag.MEDIA_TAG, DSL.name("CONSTRAINT_25C"), new TableField[] { MediaTag.MEDIA_TAG.MEDIA_ID }, Keys.CONSTRAINT_4, new TableField[] { Media.MEDIA.ID }, true);
     public static final ForeignKey<PersonRecord, PersonRecord> CONSTRAINT_8C = Internal.createForeignKey(Person.PERSON, DSL.name("CONSTRAINT_8C"), new TableField[] { Person.PERSON.MERGED_INTO_ID }, Keys.CONSTRAINT_8, new TableField[] { Person.PERSON.ID }, true);

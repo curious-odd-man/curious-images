@@ -16,6 +16,8 @@ import com.github.curiousoddman.curious_images.event.model.LibraryUpdatedEvent;
 import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository;
+import com.github.curiousoddman.curious_images.persistence.MediaMetadataEditRepository.Field;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository.ExistingMediaSummary;
 import com.github.curiousoddman.curious_images.persistence.PhotoPreviewRepository;
@@ -57,16 +59,17 @@ public class ImportJob extends BackgroundJob {
     private static final int         DB_FLUSH_BATCH_SIZE      = 200;
     private static final int         APPROXIMATE_LIBRARY_SIZE = 25_000;
 
-    private final DSLContext             dsl;
-    private final ImportRootRepository   importRootRepository;
-    private final FolderRepository       folderRepository;
-    private final MediaRepository        mediaRepository;
-    private final PhotoPreviewRepository photoPreviewRepository;
-    private final PhotoMetadataExtractor metadataExtractor;
-    private final VideoMetadataExtractor videoMetadataExtractor;
-    private final TimeProvider           timeProvider;
-    private final List<String>           rootPaths;
-    private final StatsSessionFactory    statsSessionFactory;
+    private final DSLContext                  dsl;
+    private final ImportRootRepository        importRootRepository;
+    private final FolderRepository            folderRepository;
+    private final MediaRepository             mediaRepository;
+    private final MediaMetadataEditRepository metadataEditRepository;
+    private final PhotoPreviewRepository      photoPreviewRepository;
+    private final PhotoMetadataExtractor      metadataExtractor;
+    private final VideoMetadataExtractor      videoMetadataExtractor;
+    private final TimeProvider                timeProvider;
+    private final List<String>                rootPaths;
+    private final StatsSessionFactory         statsSessionFactory;
 
     @Override
     public void runImpl() throws Exception {
@@ -161,6 +164,7 @@ public class ImportJob extends BackgroundJob {
         String absolutePath = file.toAbsolutePath()
                                   .toString();
         long          fileSize = Files.size(file);
+        LocalDateTime now      = timeProvider.now();
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
@@ -169,7 +173,7 @@ public class ImportJob extends BackgroundJob {
             // Cheap rescan: file unchanged. Touch last_seen_at; do NOT reset AI status flags —
             // partial AI progress from a previous run is preserved.
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
-                                                                    .id(), timeProvider.now()));
+                                                                    .id(), now));
             return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, false, fileSize, null);
         }
 
@@ -178,12 +182,15 @@ public class ImportJob extends BackgroundJob {
         if (existing.isPresent()) {
             long photoId = existing.get()
                                    .id();
-            buffer.addAll(mediaRepository.updateMetadataQuery(photoId, fileSize,
+            boolean captureDateProtected = metadataEditRepository.hasManualEdit(photoId, Field.CAPTURE_DATE);
+            boolean orientationProtected = metadataEditRepository.hasManualEdit(photoId, Field.ROTATION);
+            buffer.addAll(mediaRepository.updateMetadataQueryProtected(photoId, fileSize,
                     metadata.width(), metadata.height(),
                     metadata.captureDate(), metadata.captureDateSource(),
                     metadata.orientationDegrees(), metadata.cameraMake(),
                     metadata.cameraModel(), metadata.lensModel(),
-                    metadata.exifExtraJson(), now));
+                    metadata.exifExtraJson(), now,
+                    captureDateProtected, orientationProtected));
             queuePreview(photoId, metadata, buffer);
             buffer.add(mediaRepository.resetAiFields(photoId));
             return new FileImportResult(ImportOutcome.UPDATED, false, fileSize, null);
@@ -213,13 +220,14 @@ public class ImportJob extends BackgroundJob {
         String absolutePath = file.toAbsolutePath()
                                   .toString();
         long          fileSize = Files.size(file);
+        LocalDateTime now      = timeProvider.now();
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
         if (existing.isPresent() && existing.get()
                                             .fileSize() == fileSize) {
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
-                                                                    .id(), timeProvider.now()));
+                                                                    .id(), now));
             return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, true, fileSize, null);
         }
 
@@ -236,11 +244,14 @@ public class ImportJob extends BackgroundJob {
         if (existing.isPresent()) {
             long videoId = existing.get()
                                    .id();
-            buffer.addAll(mediaRepository.updateVideoMetadataQuery(videoId, fileSize,
+            boolean captureDateProtected = metadataEditRepository.hasManualEdit(videoId, Field.CAPTURE_DATE);
+            boolean rotationProtected    = metadataEditRepository.hasManualEdit(videoId, Field.ROTATION);
+            buffer.addAll(mediaRepository.updateVideoMetadataQueryProtected(videoId, fileSize,
                     metadata.width(), metadata.height(),
                     metadata.captureDate(), metadata.captureDateSource(),
                     metadata.durationMs(), metadata.codec(), metadata.frameRate(), metadata.rotationDegrees(),
-                    metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now));
+                    metadata.gpsLat(), metadata.gpsLon(), metadata.gpsAltitude(), now,
+                    captureDateProtected, rotationProtected));
             buffer.add(mediaRepository.resetAiFields(videoId));
             return new FileImportResult(ImportOutcome.UPDATED, true, fileSize, null);
         }

@@ -167,6 +167,10 @@ public class Media implements Either<MediaPhotoRecord, MediaVideoRecord> {
         return either.map(MediaPhotoRecord::getAiUpdatedAt, MediaVideoRecord::getAiUpdatedAt);
     }
 
+    public Integer getRotationDegrees() {
+        return either.map(MediaPhotoRecord::getOrientation, MediaVideoRecord::getRotation);
+    }
+
     public boolean isPhoto() {
         return either.isLeft();
     }

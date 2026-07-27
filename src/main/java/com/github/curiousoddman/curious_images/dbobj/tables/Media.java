@@ -15,6 +15,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember
 import com.github.curiousoddman.curious_images.dbobj.tables.Face.FacePath;
 import com.github.curiousoddman.curious_images.dbobj.tables.Folder.FolderPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash.MediaHashPath;
+import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit.MediaMetadataEditPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaTag.MediaTagPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.Photo.PhotoPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.TagEmbedding.TagEmbeddingPath;
@@ -385,6 +386,19 @@ public class Media extends TableImpl<MediaRecord> {
             _video = new VideoPath(this, null, Keys.CONSTRAINT_4DE.getInverseKey());
 
         return _video;
+    }
+
+    private transient MediaMetadataEditPath _mediaMetadataEdit;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.MEDIA_METADATA_EDIT</code> table
+     */
+    public MediaMetadataEditPath mediaMetadataEdit() {
+        if (_mediaMetadataEdit == null)
+            _mediaMetadataEdit = new MediaMetadataEditPath(this, null, Keys.CONSTRAINT_7D7.getInverseKey());
+
+        return _mediaMetadataEdit;
     }
 
     private transient MediaHashPath _mediaHash;

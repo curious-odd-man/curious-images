@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
+import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaPhoto;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaTag;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaVideo;
@@ -128,6 +129,11 @@ public class Tables {
      * The table <code>public.MEDIA_HASH</code>.
      */
     public static final MediaHash MEDIA_HASH = MediaHash.MEDIA_HASH;
+
+    /**
+     * The table <code>public.MEDIA_METADATA_EDIT</code>.
+     */
+    public static final MediaMetadataEdit MEDIA_METADATA_EDIT = MediaMetadataEdit.MEDIA_METADATA_EDIT;
 
     /**
      * The table <code>public.MEDIA_PHOTO</code>.

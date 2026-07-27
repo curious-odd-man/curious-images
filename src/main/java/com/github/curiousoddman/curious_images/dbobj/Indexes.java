@@ -15,6 +15,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.FlywaySchemaHistory;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
+import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
 
 import javax.annotation.processing.Generated;
 
@@ -57,5 +58,6 @@ public class Indexes {
     public static final Index IDX_MEDIA_CAPTURE_DATE = Internal.createIndex(DSL.name("IDX_MEDIA_CAPTURE_DATE"), Media.MEDIA, new OrderField[] { Media.MEDIA.CAPTURE_DATE }, false);
     public static final Index IDX_MEDIA_FOLDER = Internal.createIndex(DSL.name("IDX_MEDIA_FOLDER"), Media.MEDIA, new OrderField[] { Media.MEDIA.FOLDER_ID }, false);
     public static final Index IDX_MEDIA_HASH_CONTENT_HASH = Internal.createIndex(DSL.name("IDX_MEDIA_HASH_CONTENT_HASH"), MediaHash.MEDIA_HASH, new OrderField[] { MediaHash.MEDIA_HASH.CONTENT_HASH }, false);
+    public static final Index IDX_MEDIA_METADATA_EDIT_MEDIA_FIELD = Internal.createIndex(DSL.name("IDX_MEDIA_METADATA_EDIT_MEDIA_FIELD"), MediaMetadataEdit.MEDIA_METADATA_EDIT, new OrderField[] { MediaMetadataEdit.MEDIA_METADATA_EDIT.MEDIA_ID, MediaMetadataEdit.MEDIA_METADATA_EDIT.FIELD_NAME }, false);
     public static final Index IDX_MEDIA_TYPE = Internal.createIndex(DSL.name("IDX_MEDIA_TYPE"), Media.MEDIA, new OrderField[] { Media.MEDIA.MEDIA_TYPE }, false);
 }
