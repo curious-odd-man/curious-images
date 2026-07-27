@@ -96,14 +96,7 @@ public class TreeManager {
         if (stats == null) {
             return "Last Import";
         }
-        String suffix = switch (stats.status()) {
-            case RUNNING -> "Running…";
-            case COMPLETED -> "Completed";
-            case FAILED -> "Failed";
-            case INTERRUPTED -> "Interrupted";
-            case INTERRUPT_REQUESTED -> "Stopping…";
-            case NEVER_RUN -> "Never run";
-        };
+        String suffix = stats.status().asText();
         return "Last Import (" + suffix + ")";
     }
 

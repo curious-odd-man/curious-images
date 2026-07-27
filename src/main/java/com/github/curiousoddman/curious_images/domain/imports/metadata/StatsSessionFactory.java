@@ -21,6 +21,7 @@ public class StatsSessionFactory {
     private final TimeProvider timeProvider;
 
     public StatsSession getSession(ImportJobType jobType, List<String> effectiveRootPaths, AtomicBoolean interrupted) {
+        //noinspection resource
         return new StatsSession(
                 importJobStatsRepository,
                 applicationEventPublisher,

@@ -33,12 +33,11 @@ public class FaceAligner {
     /**
      * Crops and aligns a face from {@code source} using detected landmarks.
      *
-     * @param faceId
      * @param source    the full original image (BGR Mat, as produced by AiPipelineJob#loadImageOriented)
      * @param landmarks float[5][2] of [x,y] landmark pixel coordinates in {@code source} space
      * @return a 112×112 aligned face crop (BGR), ready for ArcFaceEncoder. Caller must release().
      */
-    public Mat align(Long faceId, Mat source, float[][] landmarks) {
+    public Mat align(Mat source, float[][] landmarks) {
         double[] t = estimateSimilarityTransform(landmarks, REFERENCE);
 
         Mat affineMat = new Mat(2, 3, CvType.CV_64F);

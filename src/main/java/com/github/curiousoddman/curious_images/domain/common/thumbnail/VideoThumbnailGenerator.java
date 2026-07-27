@@ -32,8 +32,7 @@ public class VideoThumbnailGenerator {
      * {@code ImageUtils.imageOrCr2Preview}).
      */
     public Optional<BufferedImage> extractFrame(Path videoFile) {
-        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile.toString());
-        try {
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile.toString())) {
             grabber.start();
 
             long durationMs = grabber.getLengthInTime() / 1000L;
@@ -53,19 +52,13 @@ public class VideoThumbnailGenerator {
                 return Optional.empty();
             }
 
-            Java2DFrameConverter converter = new Java2DFrameConverter();
-            BufferedImage        image     = converter.convert(frame);
-            return Optional.ofNullable(image);
+            try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
+                BufferedImage image = converter.convert(frame);
+                return Optional.ofNullable(image);
+            }
         } catch (Exception e) {
             log.warn("Failed to extract thumbnail frame from {}", videoFile, e);
             return Optional.empty();
-        } finally {
-            try {
-                grabber.stop();
-                grabber.release();
-            } catch (Exception e) {
-                log.debug("Failed to release FFmpeg grabber for {}", videoFile, e);
-            }
         }
     }
 }

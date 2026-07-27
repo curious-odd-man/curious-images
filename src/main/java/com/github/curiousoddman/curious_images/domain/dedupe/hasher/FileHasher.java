@@ -47,6 +47,7 @@ public class FileHasher {
         try (InputStream in = Files.newInputStream(file);
              DigestInputStream digestIn = new DigestInputStream(in, digest)) {
             byte[] buffer = new byte[BUFFER_SIZE];
+            //noinspection StatementWithEmptyBody
             while (digestIn.read(buffer) != -1) {
                 // reading drives the digest via DigestInputStream; nothing else to do per-chunk
             }

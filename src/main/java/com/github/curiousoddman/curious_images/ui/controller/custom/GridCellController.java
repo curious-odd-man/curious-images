@@ -253,16 +253,7 @@ public class GridCellController implements Initializable {
         String absolutePath = gridCellData.media()
                                           .getAbsolutePath();
         try {
-            javafx.scene.media.Media media = new javafx.scene.media.Media(new File(absolutePath).toURI()
-                                                                                                .toString());
-            MediaPlayer player = new MediaPlayer(media);
-            player.setMute(true);
-            player.setCycleCount(MediaPlayer.INDEFINITE);
-            player.setOnError(() -> {
-                log.warn("Hover-preview playback failed for {}: {}", absolutePath, player.getError()
-                                                                                         .getMessage());
-                stopHoverPreview();
-            });
+            MediaPlayer player = getMediaPlayer(absolutePath);
             hoverMediaView.setMediaPlayer(player);
             hoverPlayer = player;
 
@@ -272,6 +263,20 @@ public class GridCellController implements Initializable {
         } catch (Exception ex) {
             log.warn("Could not start hover preview for {}", absolutePath, ex);
         }
+    }
+
+    private MediaPlayer getMediaPlayer(String absolutePath) {
+        javafx.scene.media.Media media = new javafx.scene.media.Media(new File(absolutePath).toURI()
+                                                                                            .toString());
+        MediaPlayer player = new MediaPlayer(media);
+        player.setMute(true);
+        player.setCycleCount(MediaPlayer.INDEFINITE);
+        player.setOnError(() -> {
+            log.warn("Hover-preview playback failed for {}: {}", absolutePath, player.getError()
+                                                                                     .getMessage());
+            stopHoverPreview();
+        });
+        return player;
     }
 
     private void stopHoverPreview() {

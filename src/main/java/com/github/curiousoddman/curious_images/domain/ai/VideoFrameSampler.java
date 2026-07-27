@@ -28,50 +28,43 @@ import java.util.List;
 public class VideoFrameSampler {
 
     /**
-     * @param videoFile         absolute path to the video file
-     * @param sampleCount       configured max number of frames to sample
+     * @param videoFile          absolute path to the video file
+     * @param sampleCount        configured max number of frames to sample
      * @param minIntervalSeconds configured minimum spacing between samples, in seconds
      * @return sampled frames in chronological order; empty if the video couldn't be opened at all
      * (never throws for one bad file — same contract as the rest of the video-decode pipeline)
      */
     public List<SampledFrame> sample(Path videoFile, int sampleCount, int minIntervalSeconds) {
         List<SampledFrame> result = new ArrayList<>();
-        FFmpegFrameGrabber  grabber = new FFmpegFrameGrabber(videoFile.toString());
-        try {
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile.toString())) {
             grabber.start();
             long       durationMs = grabber.getLengthInTime() / 1000L; // JavaCV reports microseconds
             List<Long> offsets    = computeOffsetsMs(durationMs, sampleCount, minIntervalSeconds * 1000L);
 
-            Java2DFrameConverter converter = new Java2DFrameConverter();
-            for (long offsetMs : offsets) {
-                try {
-                    grabber.setTimestamp(offsetMs * 1000L);
-                    Frame frame = grabber.grabImage();
-                    if (frame == null) {
-                        // Some containers need a first grab to land on a real frame after a seek.
-                        frame = grabber.grabImage();
+            try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
+                for (long offsetMs : offsets) {
+                    try {
+                        grabber.setTimestamp(offsetMs * 1000L);
+                        Frame frame = grabber.grabImage();
+                        if (frame == null) {
+                            // Some containers need a first grab to land on a real frame after a seek.
+                            frame = grabber.grabImage();
+                        }
+                        if (frame == null) {
+                            log.warn("Unable to decode a frame at {}ms in {}", offsetMs, videoFile);
+                            continue;
+                        }
+                        BufferedImage image = converter.convert(frame);
+                        if (image != null) {
+                            result.add(new SampledFrame(offsetMs, image));
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to grab frame at {}ms from {}", offsetMs, videoFile, e);
                     }
-                    if (frame == null) {
-                        log.warn("Unable to decode a frame at {}ms in {}", offsetMs, videoFile);
-                        continue;
-                    }
-                    BufferedImage image = converter.convert(frame);
-                    if (image != null) {
-                        result.add(new SampledFrame(offsetMs, image));
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to grab frame at {}ms from {}", offsetMs, videoFile, e);
                 }
             }
         } catch (Exception e) {
             log.warn("Failed to open {} for frame sampling", videoFile, e);
-        } finally {
-            try {
-                grabber.stop();
-                grabber.release();
-            } catch (Exception e) {
-                log.debug("Failed to release FFmpeg grabber for {}", videoFile, e);
-            }
         }
         return result;
     }

@@ -266,7 +266,7 @@ public class AiPipelineJob extends BackgroundJob {
                                 face.confidence(), toLandmarks(face.landmarks()), now, faceThumbnailPath,
                                 frame.offsetMs());
 
-                        Mat     aligned   = faceAligner.align(faceId, frame.img(), face.landmarks());
+                        Mat     aligned   = faceAligner.align(frame.img(), face.landmarks());
                         float[] embedding = arcFaceEncoder.encode(aligned);
                         aligned.release();
                         buffer.add(faceEmbeddingRepo.upsertQuery(faceId, embedding, ARCFACE_MODEL_VER));
@@ -324,7 +324,7 @@ public class AiPipelineJob extends BackgroundJob {
                     Path.of(media.getAbsolutePath()), videoFrameSampleCount, videoFrameSampleIntervalSeconds);
             List<Frame> frames = new ArrayList<>(sampled.size());
             for (VideoFrameSampler.SampledFrame sample : sampled) {
-                frames.add(new Frame(sample.offsetMs(), imageUtils.toMat(sample.image())));
+                frames.add(new Frame(sample.offsetMs(), ImageUtils.toMat(sample.image())));
             }
             return frames;
         }

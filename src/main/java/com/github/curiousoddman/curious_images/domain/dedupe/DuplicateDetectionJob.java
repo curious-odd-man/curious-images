@@ -210,18 +210,22 @@ public class DuplicateDetectionJob extends BackgroundJob {
     private Map<GroupKey, List<Long>> groupDuplicates(Map<Long, HashEntry> hashByPhoto) {
         Map<GroupKey, List<Long>> groups = new HashMap<>();
         for (Map.Entry<Long, HashEntry> entry : hashByPhoto.entrySet()) {
-            HashEntry hashEntry = entry.getValue();
-            // Grouping key includes hashType as an explicit safety rule (implementation plan
-            // §6): PIXEL and FILE hashes must never be compared, even though in practice photo
-            // and video extensions never overlap, so this never actually changes which groups
-            // form today — it just guarantees a future extension overlap can't silently cross-match.
-            GroupKey key = new GroupKey(hashEntry.hashType(), hashEntry.extension(), hashEntry.hash());
+            GroupKey key = getGroupKey(entry);
             groups.computeIfAbsent(key, _ -> new ArrayList<>())
                   .add(entry.getKey());
         }
         groups.values()
               .removeIf(photoIds -> photoIds.size() < 2);
         return groups;
+    }
+
+    private static GroupKey getGroupKey(Map.Entry<Long, HashEntry> entry) {
+        HashEntry hashEntry = entry.getValue();
+        // Grouping key includes hashType as an explicit safety rule (implementation plan
+        // §6): PIXEL and FILE hashes must never be compared, even though in practice photo
+        // and video extensions never overlap, so this never actually changes which groups
+        // form today — it just guarantees a future extension overlap can't silently cross-match.
+        return new GroupKey(hashEntry.hashType(), hashEntry.extension(), hashEntry.hash());
     }
 
     /**

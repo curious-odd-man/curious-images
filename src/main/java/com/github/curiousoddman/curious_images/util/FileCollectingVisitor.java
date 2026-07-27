@@ -1,5 +1,6 @@
 package com.github.curiousoddman.curious_images.util;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.nio.file.FileVisitResult;
@@ -22,6 +23,7 @@ public class FileCollectingVisitor extends SimpleFileVisitor<Path> {
      * both populate the "unsupported extension" counter and record a per-file SKIPPED issue for
      * each one (see {@code ImportStatsTracker#recordUnsupportedExtension}) in the Last Import view.
      */
+    @Getter
     private final List<Path> unsupportedExtensionFiles = Collections.synchronizedList(new ArrayList<>());
 
     @Override
@@ -35,9 +37,5 @@ public class FileCollectingVisitor extends SimpleFileVisitor<Path> {
             }
         }
         return FileVisitResult.CONTINUE;
-    }
-
-    public List<Path> getUnsupportedExtensionFiles() {
-        return unsupportedExtensionFiles;
     }
 }

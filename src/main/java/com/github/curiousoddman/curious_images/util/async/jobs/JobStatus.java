@@ -6,5 +6,16 @@ public enum JobStatus {
     COMPLETED,
     INTERRUPT_REQUESTED,
     INTERRUPTED,
-    FAILED
+    FAILED;
+
+    public String asText() {
+        return switch (this) {
+            case RUNNING -> "Running…";
+            case COMPLETED -> "Completed";
+            case FAILED -> "Failed";
+            case INTERRUPTED -> "Interrupted";
+            case INTERRUPT_REQUESTED -> "Stopping…";
+            case NEVER_RUN -> "Never run";
+        };
+    }
 }

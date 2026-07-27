@@ -139,14 +139,7 @@ public class ImportStatsController implements Initializable {
             case RESCAN -> "Rescan";
         });
         rootPathsLabel.setText(String.join("\n", stats.rootPaths()));
-        statusLabel.setText(switch (stats.status()) {
-            case RUNNING -> "Running…";
-            case COMPLETED -> "Completed";
-            case FAILED -> "Failed";
-            case INTERRUPTED -> "Interrupted";
-            case INTERRUPT_REQUESTED -> "Stopping…";
-            case NEVER_RUN -> "Never run";
-        });
+        statusLabel.setText(stats.status().asText());
         startedAtLabel.setText(stats.startedAt()
                                     .format(TIMESTAMP_FORMAT));
         LocalDateTime end = stats.finishedAt() != null ? stats.finishedAt() : LocalDateTime.now();

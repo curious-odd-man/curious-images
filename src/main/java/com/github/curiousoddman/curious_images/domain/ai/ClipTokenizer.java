@@ -49,7 +49,6 @@ public class ClipTokenizer {
             Pattern.UNICODE_CHARACTER_CLASS);
 
     private Map<String, Integer>      encoder;     // token string → id
-    private Map<Integer, String>      decoder;     // id → token string
     private Map<String, Integer>      bpeRanks;    // "a b" merge → rank
     private Map<String, List<String>> bpeCache;    // word → merged tokens (memoised)
 
@@ -256,8 +255,6 @@ public class ClipTokenizer {
             }
             encoder = mapper.readValue(in, new TypeReference<>() {});
         }
-        decoder = new HashMap<>();
-        encoder.forEach((k, v) -> decoder.put(v, k));
     }
 
     private void loadMerges() throws IOException {

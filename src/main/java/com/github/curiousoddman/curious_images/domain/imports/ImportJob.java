@@ -161,7 +161,6 @@ public class ImportJob extends BackgroundJob {
         String absolutePath = file.toAbsolutePath()
                                   .toString();
         long          fileSize = Files.size(file);
-        LocalDateTime now      = timeProvider.now();
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
@@ -170,7 +169,7 @@ public class ImportJob extends BackgroundJob {
             // Cheap rescan: file unchanged. Touch last_seen_at; do NOT reset AI status flags —
             // partial AI progress from a previous run is preserved.
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
-                                                                    .id(), now));
+                                                                    .id(), timeProvider.now()));
             return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, false, fileSize, null);
         }
 
@@ -214,14 +213,13 @@ public class ImportJob extends BackgroundJob {
         String absolutePath = file.toAbsolutePath()
                                   .toString();
         long          fileSize = Files.size(file);
-        LocalDateTime now      = timeProvider.now();
 
         Optional<ExistingMediaSummary> existing = mediaRepository.findExistingMediaSummaryByAbsolutePath(absolutePath);
 
         if (existing.isPresent() && existing.get()
                                             .fileSize() == fileSize) {
             buffer.add(mediaRepository.touchLastSeenAtQuery(existing.get()
-                                                                    .id(), now));
+                                                                    .id(), timeProvider.now()));
             return new FileImportResult(ImportOutcome.SKIPPED_UNCHANGED, true, fileSize, null);
         }
 

@@ -126,7 +126,7 @@ public class SearchService {
      * means at least one referenced person or tag name doesn't exist, so the whole query is
      * unsatisfiable.
      */
-    private Optional<Set<Long>> resolveFilteredPhotoIds(ParsedSearchQuery parsed) throws Exception {
+    private Optional<Set<Long>> resolveFilteredPhotoIds(ParsedSearchQuery parsed) {
         if (!parsed.hasFilters()) {
             return Optional.empty();
         }
