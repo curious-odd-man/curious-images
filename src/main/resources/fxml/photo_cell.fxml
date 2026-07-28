@@ -76,7 +76,7 @@
                         <Font name="System" size="18.0" />
                     </font>
                 </Label>
-                <Label fx:id="faceCountLabel" text="2" textFill="#1976D2">
+                <Label fx:id="faceCountLabel" text="2" styleClass="text-face-count">
                     <font>
                         <Font name="System Bold" size="18.0" />
                     </font>

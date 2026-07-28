@@ -450,3 +450,4 @@ FontIcon {
 .icon-duplicate { -fx-icon-color: #ffa726; }
 .icon-selection { -fx-icon-color: -accent; }
 .icon-overlay   { -fx-icon-color: white; }
+.text-face-count { -fx-text-fill: #64b5f6; }
