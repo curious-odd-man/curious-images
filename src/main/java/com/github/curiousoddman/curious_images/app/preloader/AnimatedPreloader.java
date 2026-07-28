@@ -1,5 +1,6 @@
 package com.github.curiousoddman.curious_images.app.preloader;
 
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.application.Preloader;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -26,6 +27,7 @@ public class AnimatedPreloader extends Preloader {
         );
 
         Scene scene = new Scene(root);
+        ThemeManager.register(scene);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -33,6 +35,7 @@ public class AnimatedPreloader extends Preloader {
     @Override
     public void handleApplicationNotification(PreloaderNotification info) {
         if (info instanceof MainSceneVisible) {
+            ThemeManager.unregister(stage.getScene());
             stage.hide();
         }
     }

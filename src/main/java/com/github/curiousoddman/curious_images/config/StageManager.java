@@ -4,6 +4,7 @@ import com.github.curiousoddman.curious_images.event.model.UserShutdownApplicati
 import com.github.curiousoddman.curious_images.model.LoadedFxml;
 import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
@@ -36,9 +37,7 @@ public class StageManager {
 
         LoadedFxml<T> loaded = loadRootNode(view);
         Scene         scene  = new Scene(loaded.parent());
-        scene.getStylesheets()
-             .add("styles/global.css");
-
+        ThemeManager.register(scene);
         primaryStage.setScene(scene);
         primaryStage.show();
         return loaded.controller();

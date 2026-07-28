@@ -33,6 +33,8 @@ import com.github.curiousoddman.curious_images.ui.nodes.NodePayload.FolderPayloa
 import com.github.curiousoddman.curious_images.ui.nodes.NodePayload.PersonPayload;
 import com.github.curiousoddman.curious_images.ui.nodes.NodePayload.TimelinePayload;
 import com.github.curiousoddman.curious_images.ui.nodes.NodePayload.UndatedPayload;
+import com.github.curiousoddman.curious_images.ui.nodes.ThemePickerButton;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import com.github.curiousoddman.curious_images.ui.util.AlertHelper;
 import com.github.curiousoddman.curious_images.util.async.DelayedAction;
 import com.github.curiousoddman.curious_images.util.async.jobs.JobManager;
@@ -45,7 +47,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
@@ -88,9 +89,9 @@ public class LibraryController implements Initializable {
     private static final int SEARCH_TOP_K = 50;
 
     private final FxmlLoader                fxmlLoader;
-    private final UserPreferencesService userPreferencesService;
-    private final MediaRepository        mediaRepository;
-    private final SearchService          searchService;
+    private final UserPreferencesService    userPreferencesService;
+    private final MediaRepository           mediaRepository;
+    private final SearchService             searchService;
     private final JobManager                jobManager;
     private final ModelPaths                modelPaths;
     private final TreeManager               treeManager;
@@ -138,15 +139,19 @@ public class LibraryController implements Initializable {
     @FXML
     public Label                     backgroundProgressDescription;
     @FXML
-    public Menu                      notificationsMenu;
+    public Button                    notificationsMenu;
     @FXML
     public BorderPane                rootBorderPane;
+    @FXML
+    public Button                    themePickerButton;
 
     private PersonDetailController personDetailController;
     private GridController         gridController;
     private RightPanelController   rightPanelController;
+    private ThemePickerButton      themePickerButtonWrapper;
 
     private volatile boolean autoStartAiPipelineAfterModelDownload = false;
+
 
     @Override
     @SneakyThrows
@@ -190,6 +195,8 @@ public class LibraryController implements Initializable {
                 new UiElement<>(personDetailContainer, personDetailController),
                 new UiElement<>(importStatsContainer, importStatsLoaded.controller())
         );
+
+        themePickerButtonWrapper = new ThemePickerButton(themePickerButton);
     }
 
     // ── Window / split-pane preferences ──────────────────────────────────────
@@ -373,12 +380,15 @@ public class LibraryController implements Initializable {
         Stage stage = new Stage();
         Parent root = fxmlLoader.load(FxmlView.RE_SCAN_MODAL, new RescanBundle("D:\\Programming\\sample-data"))
                                 .parent();
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        ThemeManager.register(scene);
+        stage.setScene(scene);
         stage.setTitle("Rescan library");
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(backgroundProcessCancelButton.getScene()
                                                      .getWindow());
         stage.showAndWait();
+        ThemeManager.unregister(scene);
     }
 
     @FXML
@@ -387,12 +397,16 @@ public class LibraryController implements Initializable {
         Stage stage = new Stage();
         Parent root = fxmlLoader.load(FxmlView.RESCAN_ROOTS, null)
                                 .parent();
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        ThemeManager.register(scene);
+
+        stage.setScene(scene);
         stage.setTitle("Rescan existing roots");
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(backgroundProcessCancelButton.getScene()
                                                      .getWindow());
         stage.showAndWait();
+        ThemeManager.unregister(scene);
     }
 
     /**
@@ -411,12 +425,15 @@ public class LibraryController implements Initializable {
         Stage stage = new Stage();
         Parent root = fxmlLoader.load(FxmlView.SETTINGS, null)
                                 .parent();
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        ThemeManager.register(scene);
+        stage.setScene(scene);
         stage.setTitle("Settings");
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(backgroundProcessCancelButton.getScene()
                                                      .getWindow());
         stage.showAndWait();
+        ThemeManager.unregister(scene);
     }
 
     @FXML
@@ -584,12 +601,16 @@ public class LibraryController implements Initializable {
         Stage stage = new Stage();
         Parent root = fxmlLoader.load(FxmlView.ADD_FILES, bundle)
                                 .parent();
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        ThemeManager.register(scene);
+
+        stage.setScene(scene);
         stage.setTitle("Add files / folders");
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(backgroundProcessCancelButton.getScene()
                                                      .getWindow());
         stage.showAndWait();
+        ThemeManager.unregister(scene);
     }
 
     private void checkModelsAndPromptDownload() {

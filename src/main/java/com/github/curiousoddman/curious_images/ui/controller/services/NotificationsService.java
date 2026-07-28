@@ -9,8 +9,12 @@ import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
 import com.github.curiousoddman.curious_images.ui.controller.custom.NotificationMenuItemController;
 import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
-import javafx.scene.control.CustomMenuItem;
-import javafx.scene.control.Menu;
+import javafx.event.ActionEvent;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import javafx.stage.Popup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -29,14 +33,57 @@ import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.EXCLAMATION_TRIAN
 @Component
 @RequiredArgsConstructor
 public class NotificationsService {
+    private final Popup popup = new Popup();
+
     private final List<UserNotificationPayload> payloads = new ArrayList<>();
 
     private final FxmlLoader fxmlLoader;
 
-    private Menu notificationsMenu;
+    private Button notificationsMenu;
 
-    public void initialize(Menu notificationsMenu) {
+    public void initialize(Button notificationsMenu) {
         this.notificationsMenu = notificationsMenu;
+
+        popup.setAutoHide(true);   // closes automatically on outside click / focus loss
+        popup.setHideOnEscape(true);
+
+        notificationsMenu.setOnAction(this::onNotificationsOpenClick);
+    }
+
+    private void onNotificationsOpenClick(ActionEvent actionEvent) {
+        if (popup.isShowing()) {
+            popup.hide();
+            return;
+        }
+
+        popup.getContent()
+             .add(buildPanel());
+
+        // Position just below the button, left-aligned with it.
+        Bounds bounds = notificationsMenu.localToScreen(notificationsMenu.getBoundsInLocal());
+        popup.show(notificationsMenu.getScene()
+                                    .getWindow(), bounds.getMinX(), bounds.getMaxY() + 4);
+    }
+
+    private Node buildPanel() {
+        HBox hBox = new HBox();
+        for (UserNotificationPayload payload : payloads) {
+            LoadedFxml<NotificationMenuItemController> loaded = fxmlLoader.load(
+                    FxmlView.NOTIFICATIONS_MENU_ITEM,
+                    new NotificationMenuItemBundle(
+                            getGraphic(payload.getNotificationLevel()),
+                            payload.getTitle(),
+                            payload.getDescription(),
+                            () -> {
+                                payloads.remove(payload);
+                                updateNotification();
+                            }
+                    )
+            );
+            hBox.getChildren()
+                .add(loaded.parent());
+        }
+        return hBox;
     }
 
     @EventListener
@@ -48,8 +95,6 @@ public class NotificationsService {
 
     private void updateNotification() {
         runOnFxThread(() -> {
-            notificationsMenu.getItems()
-                             .clear();
             notificationsMenu.setVisible(!payloads.isEmpty());
             if (!payloads.isEmpty()) {
                 NotificationLevel notificationLevel = getNotificationLevel();
@@ -60,24 +105,7 @@ public class NotificationsService {
                 notificationsMenu.setText(payloads.size() + "");
             }
 
-            for (UserNotificationPayload payload : payloads) {
-                LoadedFxml<NotificationMenuItemController> loaded = fxmlLoader.load(
-                        FxmlView.NOTIFICATIONS_MENU_ITEM,
-                        new NotificationMenuItemBundle(
-                                getGraphic(payload.getNotificationLevel()),
-                                payload.getTitle(),
-                                payload.getDescription(),
-                                () -> {
-                                    payloads.remove(payload);
-                                    updateNotification();
-                                }
-                        )
-                );
-                CustomMenuItem customMenuItem = new CustomMenuItem(loaded.parent());
-                customMenuItem.setHideOnClick(false);
-                notificationsMenu.getItems()
-                                 .add(customMenuItem);
-            }
+
         });
     }
 

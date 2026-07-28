@@ -7,6 +7,7 @@ import com.github.curiousoddman.curious_images.model.bundle.SlideshowBundle;
 import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
 import com.github.curiousoddman.curious_images.ui.controller.screen.SlideshowController;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.animation.ScaleTransition;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -41,20 +42,22 @@ public class UiUtils {
         stage.close();
     }
 
-    public static void openSlideshow(List<Media> photos, int startIndex, Scene scene2, FxmlLoader fxmlLoader) {
+    public static void openSlideshow(List<Media> photos, int startIndex, Scene parentScene, FxmlLoader fxmlLoader) {
         try {
             Stage stage = new Stage();
             stage.setTitle("Slideshow");
             stage.initStyle(StageStyle.UNDECORATED);
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.initOwner(scene2.getWindow());
+            stage.initOwner(parentScene.getWindow());
 
             LoadedFxml<SlideshowController> loaded     = fxmlLoader.load(FxmlView.SLIDESHOW, null);
             SlideshowController             controller = loaded.controller();
             controller.initSlideshow(new SlideshowBundle(photos, startIndex));
 
             Scene scene = new Scene(loaded.parent());
+            ThemeManager.register(scene);
             stage.setScene(scene);
+            stage.setOnHiding(_ -> ThemeManager.unregister(scene));
             stage.setMaximized(true);
             stage.show();
         } catch (Exception ex) {

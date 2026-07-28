@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
+<?import org.kordamp.ikonli.javafx.*?>
 
 <BorderPane fx:id="rootBorderPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" prefHeight="1080.0" prefWidth="1920.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.curiousoddman.curious_images.ui.controller.screen.LibraryController">
     <center>
@@ -68,41 +69,50 @@
         </SplitPane>
     </center>
     <top>
-        <MenuBar BorderPane.alignment="CENTER">
-            <menus>
-                <Menu mnemonicParsing="false" text="File">
-                    <items>
-                        <!-- Existing: single-root rescan via path-entry modal -->
-                        <MenuItem mnemonicParsing="false" onAction="#onRescanMenuClicked" text="Rescan library..." />
+      <HBox maxHeight="25.0" prefHeight="25.0" BorderPane.alignment="CENTER">
+         <children>
+              <MenuBar HBox.hgrow="ALWAYS">
+                  <menus>
+                      <Menu mnemonicParsing="false" text="File">
+                          <items>
+                              <!-- Existing: single-root rescan via path-entry modal -->
+                              <MenuItem mnemonicParsing="false" onAction="#onRescanMenuClicked" text="Rescan library..." />
 
-                        <!-- NEW: multi-root rescan via checkbox picker -->
-                        <MenuItem mnemonicParsing="false" onAction="#onRescanRootsMenuClicked" text="Rescan existing roots..." />
+                              <!-- NEW: multi-root rescan via checkbox picker -->
+                              <MenuItem mnemonicParsing="false" onAction="#onRescanRootsMenuClicked" text="Rescan existing roots..." />
 
-                        <!-- NEW: add new files / folders via copy or new-root -->
-                        <MenuItem mnemonicParsing="false" onAction="#onAddFilesMenuClicked" text="Add files / folders..." />
+                              <!-- NEW: add new files / folders via copy or new-root -->
+                              <MenuItem mnemonicParsing="false" onAction="#onAddFilesMenuClicked" text="Add files / folders..." />
 
-                        <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" onAction="#onFindDuplicates" text="Find duplicates" />
-                        <MenuItem mnemonicParsing="false" onAction="#onTriggerAiPipeline" text="Trigger AI pipeline" />
-                        <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" onAction="#onSettingsMenuClicked" text="Settings..." />
-                        <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" text="Close" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Delete" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="About" />
-                    </items>
-                </Menu>
-                <Menu fx:id="notificationsMenu" mnemonicParsing="false" />
-            </menus>
-        </MenuBar>
+                              <SeparatorMenuItem />
+                              <MenuItem mnemonicParsing="false" onAction="#onFindDuplicates" text="Find duplicates" />
+                              <MenuItem mnemonicParsing="false" onAction="#onTriggerAiPipeline" text="Trigger AI pipeline" />
+                              <SeparatorMenuItem />
+                              <MenuItem mnemonicParsing="false" onAction="#onSettingsMenuClicked" text="Settings..." />
+                              <SeparatorMenuItem />
+                              <MenuItem mnemonicParsing="false" text="Close" />
+                          </items>
+                      </Menu>
+                      <Menu mnemonicParsing="false" text="Edit">
+                          <items>
+                              <MenuItem mnemonicParsing="false" text="Delete" />
+                          </items>
+                      </Menu>
+                      <Menu mnemonicParsing="false" text="Help">
+                          <items>
+                              <MenuItem mnemonicParsing="false" text="About" />
+                          </items>
+                      </Menu>
+                  </menus>
+              </MenuBar>
+                <Button fx:id="notificationsMenu" mnemonicParsing="false" visible="false" />
+                <Button fx:id="themePickerButton" mnemonicParsing="false" styleClass="theme-picker-button">
+                    <graphic>
+                    <FontIcon iconLiteral="bi-palette"/>
+                    </graphic>
+                </Button>
+         </children>
+      </HBox>
     </top>
     <bottom>
         <HBox fx:id="backgroundProgressContainer" alignment="CENTER_LEFT" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="12.0" visible="false" BorderPane.alignment="CENTER">

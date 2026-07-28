@@ -21,13 +21,13 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.TitledPane;
-import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -56,57 +56,6 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-/**
- * Controller for {@code face_picker.fxml} — a modal view of every face tagged for a person,
- * grouped into one collapsible section per prototype (cluster) the person owns, plus an
- * "Unclustered" section for anything not currently assigned to one — so it's visually obvious
- * which faces the app currently considers "the same appearance group" for this person.
- * Originally just a cover-media chooser (plain click → pick cover → close, still unchanged —
- * see {@link #onFaceChosen}), this dialog is also the FR1/FR2/FR3/FR5 correction entry point
- * from {@code face-person-correction-requirements.md}:
- * <ul>
- *   <li>Ctrl/Shift-click a face to add it to a multi-selection (FR3), without closing the
- *       dialog or touching the cover face.</li>
- *   <li>Right-click a face for "Not this person…" (FR1), "Confirm" (FR2), or "Exclude" (FR5).
- *       If the clicked face is part of an active multi-selection, the action applies to the
- *       whole selection; otherwise it applies to just that one face. "Not this person…" opens
- *       {@link #promptDestinationDialog} — a thumbnail-based picker (see below), not a menu.</li>
- *   <li>"Move Selected to…" in the toolbar opens the same dialog, explicitly scoped to the
- *       current multi-selection (FR3's "Move selected to…" toolbar action).</li>
- * </ul>
- * <b>Destination picker.</b> Choosing a destination is a visual-recognition task ("which of
- * this person's prototypes does this face actually belong to?"), so it's a {@link Dialog} with a
- * thumbnail next to every option rather than a text-only menu: one row per existing prototype of
- * each eligible person (showing a representative face from that prototype and its member count,
- * with {@link PersonCorrectionService#suggestDestinationCluster}'s pick marked — never
- * auto-applied), a "New prototype for …" row per person, and a "New person…" row.
- * <p>
- * Reassigning or excluding a face removes it from this grid immediately — since this dialog only
- * ever shows one person's faces, a face that just left that person no longer belongs here; if
- * that empties a whole prototype's section, the section itself is removed. If a move/exclude
- * leaves some other person owning zero prototypes, this controller also prompts to delete that
- * now-empty person (see {@link #handleOrphanedPersons}) — the correction service itself never
- * deletes a person on its own initiative.
- * <p>
- * Usage (cover-pick path unchanged):
- * <pre>
- *     LoadedFxml&lt;FacePickerController&gt; loaded = fxmlLoader.load(FxmlView.FACE_PICKER, null);
- *     FacePickerController controller = loaded.controller();
- *     controller.init(allFaces, currentPerson.getCoverFaceId(), currentPerson.getId());
- *
- *     Stage stage = new Stage();
- *     stage.initModality(Modality.APPLICATION_MODAL);
- *     stage.initOwner(ownerWindow);
- *     stage.setScene(new Scene(loaded.parent()));
- *     controller.setStage(stage);
- *     stage.showAndWait();
- *
- *     FaceRecord chosen = controller.getSelectedFace(); // null if cancelled
- *     boolean    changed = controller.didCorrectionsHappen(); // true if any FR1/3/5 action fired —
- *                                                              // caller should reload the person's
- *                                                              // face list either way.
- * </pre>
- */
 @Lazy
 @Slf4j
 @Component

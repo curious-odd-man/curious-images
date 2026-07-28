@@ -17,6 +17,7 @@ import com.github.curiousoddman.curious_images.ui.controller.custom.GridControll
 import com.github.curiousoddman.curious_images.ui.controller.services.PhotoGridManager;
 import com.github.curiousoddman.curious_images.ui.controller.services.ThumbnailReadyEventListener;
 import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import com.github.curiousoddman.curious_images.ui.util.AlertHelper;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -404,10 +405,12 @@ public class PersonDetailController implements Initializable, ThumbnailReadyEven
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.initOwner(faceImageView.getScene()
                                          .getWindow());
-            stage.setScene(new Scene(loaded.parent()));
+            Scene scene = new Scene(loaded.parent());
+            ThemeManager.register(scene);
+            stage.setScene(scene);
             controller.setStage(stage);
             stage.showAndWait();
-
+            ThemeManager.unregister(scene);
             FaceRecord chosen = controller.getSelectedFace();
             if (chosen != null) {
                 applyCoverFace(chosen.getId());
