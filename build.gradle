@@ -234,6 +234,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-jooq-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
+    testImplementation 'com.helger:ph-css:7.0.4'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
