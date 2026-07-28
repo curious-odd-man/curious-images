@@ -24,14 +24,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.curiousoddman.curious_images.util.async.ThreadUtils.runOnDaemonThread;
@@ -69,6 +71,9 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
     private final Map<Long, GridCellController> visiblePhotoCells   = new HashMap<>();
     private final DelayedAction                 gridMetricsDebounce = new DelayedAction(GRID_METRICS_DEBOUNCE_MS, TimeUnit.MILLISECONDS);
 
+    private final Set<Long> selectedMediaIds = new LinkedHashSet<>();
+    private       Long      selectionAnchorId;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         listView.setCellFactory(lv -> new PhotoRowCell(this, fxmlLoader, (GridCellResources) resources));
@@ -87,6 +92,7 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
         visiblePhotoCells.clear();
         photoGridModel.clear();
         photoCountLabel.setText("");
+        clearSelection();
     }
 
     public long initiateChange() {
@@ -103,6 +109,7 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
         photoGridModel.setCells(photos);
         photoCountLabel.setText(photos.size() + " media" + (photos.size() == 1 ? "" : "s"));
         recomputeGridMetrics(true); // force a regroup even if the column count is unchanged
+        clearSelection();
     }
 
     private void recomputeGridMetrics(boolean force) {
@@ -169,7 +176,7 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
         runOnDaemonThread("OpenVideoExternally", () -> {
             try {
                 if (Desktop.isDesktopSupported() && Desktop.getDesktop()
-                                                            .isSupported(Desktop.Action.OPEN)) {
+                                                           .isSupported(Desktop.Action.OPEN)) {
                     Desktop.getDesktop()
                            .open(file);
                 } else {
@@ -191,7 +198,55 @@ public class GridController implements Initializable, PhotoGridCallbacks, Thumbn
             for (GridCellData photo : photos) {
                 row.applyImage(photo);
             }
+            for (GridCellController cell : row.getCellControllers()) {
+                cell.setOnSelectionClick(this::handleSelectionClick);
+                cell.setSelectedMediaIdsSupplier(() -> selectedMediaIds);
+                GridCellData shown = cell.getGridCellData();
+                if (shown != null) {
+                    cell.setSelected(selectedMediaIds.contains(shown.mediaId()));
+                }
+            }
         });
+    }
+
+    private void handleSelectionClick(GridCellData data, boolean shiftHeld) {
+        long clickedId = data.mediaId();
+        if (shiftHeld && selectionAnchorId != null) {
+            selectRange(selectionAnchorId, clickedId);
+        } else {
+            toggleSingle(clickedId);
+            selectionAnchorId = clickedId;
+        }
+        refreshSelectionVisuals();
+    }
+
+    private void toggleSingle(long mediaId) {
+        if (!selectedMediaIds.remove(mediaId)) {
+            selectedMediaIds.add(mediaId);
+        }
+    }
+
+    private void selectRange(long anchorId, long clickedId) {
+        Integer anchorIdx  = photoGridModel.indexById(anchorId);
+        Integer clickedIdx = photoGridModel.indexById(clickedId);
+        if (anchorIdx == null || clickedIdx == null) {
+            toggleSingle(clickedId); // anchor no longer in the current result set — fall back
+            return;
+        }
+        int lo = Math.min(anchorIdx, clickedIdx);
+        int hi = Math.max(anchorIdx, clickedIdx);
+        for (GridCellData data : photoGridModel.photosSlice(lo, hi + 1)) {
+            selectedMediaIds.add(data.mediaId());
+        }
+    }
+
+    private void refreshSelectionVisuals() {
+        visiblePhotoCells.forEach((id, cell) -> cell.setSelected(selectedMediaIds.contains(id)));
+    }
+
+    private void clearSelection() {
+        selectedMediaIds.clear();
+        selectionAnchorId = null;
     }
 
     public static RowInfo getRowInfo(PhotoGridRowController row,

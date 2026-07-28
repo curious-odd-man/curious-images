@@ -3,9 +3,13 @@ package com.github.curiousoddman.curious_images.ui.controller.custom;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaPhotoRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaTagRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.TagEmbeddingRecord;
+import com.github.curiousoddman.curious_images.domain.common.MediaRotationService;
+import com.github.curiousoddman.curious_images.domain.common.MetadataEditService;
 import com.github.curiousoddman.curious_images.model.GridCellData;
 import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.PersonDetails;
+import com.github.curiousoddman.curious_images.model.Rotate;
+import com.github.curiousoddman.curious_images.ui.util.MetadataEditDialogs;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -39,6 +43,7 @@ import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxManage;
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxUnmanage;
 import static com.github.curiousoddman.curious_images.util.HumanReadableUtils.gps;
 import static com.github.curiousoddman.curious_images.util.HumanReadableUtils.size;
+import static com.github.curiousoddman.curious_images.util.async.ThreadUtils.runOnDaemonThread;
 import static java.util.Objects.requireNonNullElse;
 
 @Lazy
@@ -46,6 +51,9 @@ import static java.util.Objects.requireNonNullElse;
 @Component
 @RequiredArgsConstructor
 public class RightPanelController implements Initializable {
+    private final MediaRotationService mediaRotationService;
+    private final MetadataEditService  metadataEditService;
+
     @FXML
     public VBox      rootVbox;
     @FXML
@@ -98,6 +106,7 @@ public class RightPanelController implements Initializable {
     private Timeline showAnimation;
     private Timeline hideAnimation;
 
+    private Media  currentMedia;
     private String lat;
     private String lon;
 
@@ -148,6 +157,7 @@ public class RightPanelController implements Initializable {
         fxManage(rootVbox);
 
         Media media = gridCellData.media();
+        currentMedia = media;
         fileNameLabel.setText(media.getFilename());
         extensionLabel.setText(media.getExtension());
         pathLabel.setText(media.getAbsolutePath());
@@ -155,11 +165,13 @@ public class RightPanelController implements Initializable {
         importedAtLabel.setText(media.getImportedAt()
                                      .toString());
         resolutionLabel.setText(media.getWidth() + " × " + media.getHeight() + " px");
+        Integer rotationDegrees = media.getRotationDegrees();
+        orientationLabel.setText("Rotate " + requireNonNullElse(rotationDegrees, 0) + "°");
         if (gridCellData.isPhoto()) {
             MediaPhotoRecord photo = gridCellData.photo();
-            orientationLabel.setText("Rotate " + photo.getOrientation() + "°");
             lensModelLabel.setText(photo.getLensModel());
-
+        } else {
+            lensModelLabel.setText(null);
         }
         captureDateLabel.setText(media.getCaptureDate()
                                       .toString());
@@ -219,6 +231,38 @@ public class RightPanelController implements Initializable {
     @FXML
     public void onHideDetails() {
         log.debug("Hide details requested");
+        currentMedia = null;
         hideAnimation.playFromStart();
+    }
+
+    @FXML
+    public void onEditRotation(ActionEvent event) {
+        if (currentMedia == null) {
+            return;
+        }
+        long mediaId = currentMedia.getId();
+        int  current = requireNonNullElse(currentMedia.getRotationDegrees(), 0);
+        MetadataEditDialogs.askRotationDegrees(rootVbox.getScene()
+                                                       .getWindow(), current)
+                           .ifPresent(degrees -> {
+                               Rotate rotate = Rotate.of(degrees);
+                               runOnDaemonThread("SetRotation", () -> mediaRotationService.rotateAbsolute(mediaId, rotate));
+                               orientationLabel.setText("Rotate " + degrees + "°");
+                           });
+    }
+
+    @FXML
+    public void onEditCaptureDate(ActionEvent event) {
+        if (currentMedia == null) {
+            return;
+        }
+        long mediaId = currentMedia.getId();
+        MetadataEditDialogs.askCaptureDate(rootVbox.getScene()
+                                                   .getWindow(), currentMedia.getCaptureDate())
+                           .ifPresent(dateTime -> {
+                               runOnDaemonThread("SetCaptureDate", () -> metadataEditService.setCaptureDate(mediaId, dateTime));
+                               captureDateLabel.setText(dateTime.toString());
+                               captureDateSourceLabel.setText("MANUAL_EDIT");
+                           });
     }
 }

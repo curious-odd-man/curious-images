@@ -33,7 +33,10 @@ import java.io.File;
 import java.net.URL;
 import java.util.Comparator;
 import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxManage;
@@ -74,6 +77,8 @@ public class GridCellController implements Initializable {
     @FXML
     private FontIcon   videoPlayOverlay;
     @FXML
+    private FontIcon   selectionCheckIcon;
+    @FXML
     private MediaView  hoverMediaView;
     @FXML
     private StackPane  imageSlot;
@@ -86,6 +91,12 @@ public class GridCellController implements Initializable {
 
     @Setter
     private Consumer<Media> onPhotoClicked;
+
+    @Setter
+    private BiConsumer<GridCellData, Boolean> onSelectionClick;
+
+    @Setter
+    private Supplier<Set<Long>> selectedMediaIdsSupplier;
 
     @Getter
     private GridCellData gridCellData;
@@ -114,7 +125,14 @@ public class GridCellController implements Initializable {
         imageView.setPreserveRatio(true);
         hoverMediaView.setPreserveRatio(true);
 
-        cellRoot.setOnContextMenuRequested(e -> gridContextMenu.show(gridCellData.media(), cellRoot, e));
+        cellRoot.setOnContextMenuRequested(e -> {
+            Set<Long> selection = selectedMediaIdsSupplier != null ? selectedMediaIdsSupplier.get() : Set.of();
+            if (selection.size() > 1 && gridCellData != null && selection.contains(gridCellData.mediaId())) {
+                gridContextMenu.showBulk(selection, cellRoot, e);
+            } else {
+                gridContextMenu.show(gridCellData.media(), cellRoot, e);
+            }
+        });
         if (resources instanceof GridCellResources cellResources) {
             imageDetailsConsumer = cellResources.getImageDetailsConsumer();
         }
@@ -150,6 +168,7 @@ public class GridCellController implements Initializable {
         fxUnmanage(imageView, iconsHbox, videoPlayOverlay);
         cellTooltip.setText(data.tooltipText());
         imageView.setImage(null);
+        setSelected(false);
     }
 
     public void showEmpty() {
@@ -158,6 +177,7 @@ public class GridCellController implements Initializable {
         this.gridCellData = null;
         fxUnmanage(cellRoot, iconsHbox, videoPlayOverlay);
         imageView.setImage(null);
+        setSelected(false);
     }
 
     public void showImage(GridCellData data) {
@@ -217,13 +237,28 @@ public class GridCellController implements Initializable {
                                                .collect(Collectors.joining("\n")), faceCountLabel, faceIcon);
     }
 
+    public void setSelected(boolean selected) {
+        fxManage(selected, selectionCheckIcon);
+        cellRoot.setStyle(selected ? "-fx-border-color: #2979FF; -fx-border-width: 3;" : "");
+    }
+
     private record TagData(String name, double score) {
 
     }
 
     @FXML
     private void onCellClicked(MouseEvent e) {
-        if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY && gridCellData != null && onPhotoClicked != null) {
+        if (gridCellData == null) {
+            return;
+        }
+        boolean selectionModifier = e.isControlDown() || e.isMetaDown() || e.isShiftDown();
+        if (selectionModifier) {
+            if (onSelectionClick != null) {
+                onSelectionClick.accept(gridCellData, e.isShiftDown());
+            }
+            return;
+        }
+        if (e.getClickCount() == 1 && e.getButton() == MouseButton.PRIMARY && onPhotoClicked != null) {
             onPhotoClicked.accept(gridCellData.media());
         }
     }
@@ -253,7 +288,16 @@ public class GridCellController implements Initializable {
         String absolutePath = gridCellData.media()
                                           .getAbsolutePath();
         try {
-            MediaPlayer player = getMediaPlayer(absolutePath);
+            javafx.scene.media.Media media = new javafx.scene.media.Media(new File(absolutePath).toURI()
+                                                                                                .toString());
+            MediaPlayer player = new MediaPlayer(media);
+            player.setMute(true);
+            player.setCycleCount(MediaPlayer.INDEFINITE);
+            player.setOnError(() -> {
+                log.warn("Hover-preview playback failed for {}: {}", absolutePath, player.getError()
+                                                                                         .getMessage());
+                stopHoverPreview();
+            });
             hoverMediaView.setMediaPlayer(player);
             hoverPlayer = player;
 
@@ -263,20 +307,6 @@ public class GridCellController implements Initializable {
         } catch (Exception ex) {
             log.warn("Could not start hover preview for {}", absolutePath, ex);
         }
-    }
-
-    private MediaPlayer getMediaPlayer(String absolutePath) {
-        javafx.scene.media.Media media = new javafx.scene.media.Media(new File(absolutePath).toURI()
-                                                                                            .toString());
-        MediaPlayer player = new MediaPlayer(media);
-        player.setMute(true);
-        player.setCycleCount(MediaPlayer.INDEFINITE);
-        player.setOnError(() -> {
-            log.warn("Hover-preview playback failed for {}: {}", absolutePath, player.getError()
-                                                                                     .getMessage());
-            stopHoverPreview();
-        });
-        return player;
     }
 
     private void stopHoverPreview() {

@@ -29,6 +29,11 @@
                         <Insets bottom="4.0" right="4.0" />
                     </StackPane.margin>
                 </FontIcon>
+                <FontIcon fx:id="selectionCheckIcon" iconColor="#2979FF" iconLiteral="bi-check-circle-fill" iconSize="22" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="TOP_LEFT">
+                    <StackPane.margin>
+                        <Insets left="4.0" top="4.0" />
+                    </StackPane.margin>
+                </FontIcon>
             </children>
         </StackPane>
     </center>

@@ -91,7 +91,16 @@
                     <FontIcon iconLiteral="bi-arrow-repeat" iconSize="16" />
                 </graphic>
             </Label>
-            <Label fx:id="orientationLabel" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+            <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="1" GridPane.rowIndex="6">
+                <children>
+                    <Label fx:id="orientationLabel" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                    <Button onAction="#onEditRotation" styleClass="icon-button">
+                        <graphic>
+                            <FontIcon iconLiteral="bi-pencil-fill" iconSize="14" />
+                        </graphic>
+                    </Button>
+                </children>
+            </HBox>
 
 
             <!-- Capture -->
@@ -103,7 +112,16 @@
                     <FontIcon iconLiteral="bi-calendar-event" iconSize="16" />
                 </graphic>
             </Label>
-            <Label fx:id="captureDateLabel" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+            <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                <children>
+                    <Label fx:id="captureDateLabel" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                    <Button onAction="#onEditCaptureDate" styleClass="icon-button">
+                        <graphic>
+                            <FontIcon iconLiteral="bi-pencil-fill" iconSize="14" />
+                        </graphic>
+                    </Button>
+                </children>
+            </HBox>
 
 
 
