@@ -24,12 +24,12 @@
                </font></Label>
                 <ImageView fx:id="imageView" managed="false" preserveRatio="true" visible="false" />
                 <MediaView fx:id="hoverMediaView" managed="false" visible="false" />
-                <FontIcon fx:id="videoPlayOverlay" iconColor="WHITE" iconLiteral="bi-play-circle-fill" iconSize="28" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                <FontIcon fx:id="videoPlayOverlay" styleClass="icon-overlay" iconLiteral="bi-play-circle-fill" iconSize="28" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                     <StackPane.margin>
                         <Insets bottom="4.0" right="4.0" />
                     </StackPane.margin>
                 </FontIcon>
-                <FontIcon fx:id="selectionCheckIcon" iconColor="#2979FF" iconLiteral="bi-check-circle-fill" iconSize="22" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="TOP_LEFT">
+                <FontIcon fx:id="selectionCheckIcon" styleClass="icon-selection" iconLiteral="bi-check-circle-fill" iconSize="22" managed="false" mouseTransparent="true" visible="false" StackPane.alignment="TOP_LEFT">
                     <StackPane.margin>
                         <Insets left="4.0" top="4.0" />
                     </StackPane.margin>
@@ -45,7 +45,7 @@
             <children>
                 <Label fx:id="typeImageIcon">
                     <graphic>
-                        <FontIcon iconColor="#5C6BC0" iconLiteral="bi-instagram" />
+                        <FontIcon styleClass="icon-type" iconLiteral="bi-instagram" />
                     </graphic>
                     <font>
                         <Font name="System" size="18.0" />
@@ -53,7 +53,7 @@
                 </Label>
                 <Label fx:id="tagIcon">
                     <graphic>
-                        <FontIcon iconColor="#00897B" iconLiteral="bi-tags-fill" />
+                        <FontIcon styleClass="icon-tag" iconLiteral="bi-tags-fill" />
                     </graphic>
                     <font>
                         <Font name="System" size="18.0" />
@@ -62,7 +62,7 @@
 
                 <Label fx:id="gpsIcon">
                     <graphic>
-                        <FontIcon iconColor="#43A047" iconLiteral="bi-geo-fill" />
+                        <FontIcon styleClass="icon-location" iconLiteral="bi-geo-fill" />
                     </graphic>
                     <font>
                         <Font name="System" size="18.0" />
@@ -70,7 +70,7 @@
                 </Label>
                 <Label fx:id="faceIcon">
                     <graphic>
-                        <FontIcon iconColor="#1976D2" iconLiteral="bi-person-square" />
+                        <FontIcon styleClass="icon-face" iconLiteral="bi-person-square" />
                     </graphic>
                     <font>
                         <Font name="System" size="18.0" />
@@ -82,10 +82,10 @@
                     </font>
                 </Label>
 
-                <FontIcon fx:id="duplicateIcon" iconColor="#F57C00" iconLiteral="bi-front" iconSize="18" />
+                <FontIcon fx:id="duplicateIcon" styleClass="icon-duplicate" iconLiteral="bi-front" iconSize="18" />
                 <Button onAction="#onShowInfo" styleClass="icon-button">
                     <graphic>
-                        <FontIcon fx:id="showInfoIcon" iconColor="#616161" iconLiteral="bi-info-circle-fill" iconSize="18" />
+                        <FontIcon fx:id="showInfoIcon" styleClass="icon-muted" iconLiteral="bi-info-circle-fill" iconSize="18" />
                     </graphic>
                 </Button>
             </children>

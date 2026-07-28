@@ -22,7 +22,7 @@
 
     <Button onAction="#onDismissClicked">
         <graphic>
-            <FontIcon iconColor="orangered" iconLiteral="bi-x-octagon-fill" iconSize="18" />
+            <FontIcon styleClass="icon-danger" iconLiteral="bi-x-octagon-fill" iconSize="18" />
         </graphic>
     </Button>
 </HBox>

@@ -435,3 +435,12 @@ FontIcon {
 .icon-warning { -fx-icon-color: #f59e0b; }
 .icon-info    { -fx-icon-color: -accent; }
 .icon-muted   { -fx-icon-color: -text-secondary; }
+
+/* ---- Icon category classes (photo grid metadata badges) ---- */
+.icon-type      { -fx-icon-color: #5c6bc0; }
+.icon-tag       { -fx-icon-color: #00897b; }
+.icon-location  { -fx-icon-color: #43a047; }
+.icon-face      { -fx-icon-color: #1e88e5; }
+.icon-duplicate { -fx-icon-color: #fb8c00; }
+.icon-selection { -fx-icon-color: -accent; }
+.icon-overlay   { -fx-icon-color: white; }

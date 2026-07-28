@@ -421,3 +421,12 @@ FontIcon {
 .icon-warning { -fx-icon-color: #b5872c; }
 .icon-info    { -fx-icon-color: -accent; }
 .icon-muted   { -fx-icon-color: -text-secondary; }
+
+/* ---- Icon category classes (photo grid metadata badges) ---- */
+.icon-type      { -fx-icon-color: #8577b3; }
+.icon-tag       { -fx-icon-color: #2f8f7a; }
+.icon-location  { -fx-icon-color: #6d8c5f; }
+.icon-face      { -fx-icon-color: #3d6fa8; }
+.icon-duplicate { -fx-icon-color: #c17d3b; }
+.icon-selection { -fx-icon-color: -accent; }
+.icon-overlay   { -fx-icon-color: #faf6f0; }

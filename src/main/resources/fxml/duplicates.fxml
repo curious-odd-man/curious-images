@@ -22,22 +22,22 @@
             <children>
                 <Button fx:id="keepAllButton" mnemonicParsing="false" onAction="#onKeepAll" text="Keep All">
                     <graphic>
-                        <FontIcon iconColor="darkcyan" iconLiteral="bi-check-square-fill" iconSize="18" />
+                        <FontIcon styleClass="icon-success" iconLiteral="bi-check-square-fill" iconSize="18" />
                     </graphic>
                 </Button>
                 <Button fx:id="keepSelectedButton" disable="true" mnemonicParsing="false" onAction="#onKeepSelectedClicked" text="Keep Marked">
                     <graphic>
-                        <FontIcon iconColor="green" iconLiteral="bi-check2-square" iconSize="18" />
+                        <FontIcon styleClass="icon-success" iconLiteral="bi-check2-square" iconSize="18" />
                     </graphic>
                 </Button>
                 <Button fx:id="deleteSelectedButton" disable="true" mnemonicParsing="false" onAction="#onDeleteSelectedClicked" text="Delete Marked">
                     <graphic>
-                        <FontIcon iconColor="red" iconLiteral="bi-file-x-fill" iconSize="18" />
+                        <FontIcon styleClass="icon-danger" iconLiteral="bi-file-x-fill" iconSize="18" />
                     </graphic>
                 </Button>
                 <Button fx:id="deleteAllButton" mnemonicParsing="false" onAction="#onDeleteAll" text="Delete All">
                     <graphic>
-                        <FontIcon iconColor="darkred" iconLiteral="bi-file-excel-fill" iconSize="18" />
+                        <FontIcon styleClass="icon-danger" iconLiteral="bi-file-excel-fill" iconSize="18" />
                     </graphic>
                 </Button>
             </children>
@@ -48,7 +48,7 @@
             <children>
                 <Button fx:id="previousDuplicateButton" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#showPreviousDuplicate" text="Prev Duplicate">
                     <graphic>
-                        <FontIcon iconColor="blue" iconLiteral="bi-arrow-left-circle" iconSize="18" />
+                        <FontIcon styleClass="icon-info" iconLiteral="bi-arrow-left-circle" iconSize="18" />
                     </graphic>
                     <font>
                         <Font name="Consolas" size="20.0" />
@@ -61,7 +61,7 @@
                 </Label>
                 <Button fx:id="nextDuplicateButton" contentDisplay="RIGHT" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#showNextDuplicate" text="Next Duplicate">
                     <graphic>
-                        <FontIcon iconColor="blue" iconLiteral="bi-arrow-right-circle" iconSize="18" />
+                        <FontIcon styleClass="icon-info" iconLiteral="bi-arrow-right-circle" iconSize="18" />
                     </graphic>
                     <font>
                         <Font name="Consolas" size="20.0" />
