@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Theme {
-    SIMPLE("styles/default.css", "Simple"),
+    SIMPLE("styles/theme-5-default.css", "Simple"),
     DARK("styles/theme-1-dark.css", "Dark Mode"),
     WARM("styles/theme-2-warm-editorial.css", "Warm Editorial"),
     MONO("styles/theme-3-minimal-mono.css", "Minimal Mono"),
