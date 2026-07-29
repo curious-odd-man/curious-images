@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  VISUAL REFERENCE ONLY - not production code.
+  Represents: Unrefined View
+  - Photos grouped by scene group (incl. a singleton group).
+  - Each tile's border color encodes its state (see styles.css .state-*).
+  - Bulk action buttons per scene group (§7 of spec: "set group to state X",
+    "mark all No except selected").
+-->
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<BorderPane prefHeight="640" prefWidth="960" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+
+    <!-- ============ TOP TOOLBAR ============ -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="toolbar">
+            <Label styleClass="toolbar-title" text="Iceland Trip 2026" />
+            <Region HBox.hgrow="ALWAYS" />
+            <ToggleButton selected="true" styleClass="view-toggle" text="Unrefined" />
+            <ToggleButton styleClass="view-toggle" text="Refined" />
+            <Separator orientation="VERTICAL" />
+            <Button styleClass="toolbar-button" text="Start Triage" />
+        </HBox>
+    </top>
+
+    <!-- ============ SCENE GROUPS ============ -->
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox spacing="18" style="-fx-padding: 16;">
+
+                <!-- Scene Group 1: waterfall burst, 5 photos -->
+                <VBox spacing="10" styleClass="scene-group-box">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label styleClass="scene-group-header" text="Scene Group 1 — Skógafoss (5 photos)" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <MenuButton styleClass="bulk-action-button" text="Set group to...">
+                            <items>
+                                <MenuItem text="Yes" />
+                                <MenuItem text="Rather Yes" />
+                                <MenuItem text="Unassigned" />
+                                <MenuItem text="Rather No" />
+                                <MenuItem text="No" />
+                            </items>
+                        </MenuButton>
+                        <Button styleClass="bulk-action-button" text="Keep only selected" />
+                    </HBox>
+
+                    <FlowPane hgap="10" vgap="10">
+
+                        <!-- Tile: Yes -->
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-yes">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-yes" text="YES" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0231.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+
+                        <!-- Tile: Rather Yes -->
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-rather-yes">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-rather-yes" text="RATHER YES" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0232.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+
+                        <!-- Tile: Unassigned -->
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-unassigned">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-unassigned" text="UNASSIGNED" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0233.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+
+                        <!-- Tile: Rather No -->
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-rather-no">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-rather-no" text="RATHER NO" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0234.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+
+                        <!-- Tile: No -->
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-no">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-no" text="NO" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0235.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+
+                    </FlowPane>
+                </VBox>
+
+                <!-- Scene Group 2: singleton -->
+                <VBox spacing="10" styleClass="scene-group-box">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label styleClass="scene-group-header" text="Scene Group 2 — single photo" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <MenuButton styleClass="bulk-action-button" text="Set group to...">
+                            <items>
+                                <MenuItem text="Yes" />
+                                <MenuItem text="Rather Yes" />
+                                <MenuItem text="Unassigned" />
+                                <MenuItem text="Rather No" />
+                                <MenuItem text="No" />
+                            </items>
+                        </MenuButton>
+                    </HBox>
+                    <FlowPane hgap="10" vgap="10">
+                        <StackPane prefHeight="140" prefWidth="140" styleClass="photo-tile, state-unassigned">
+                            <Rectangle height="134" styleClass="photo-placeholder-fill" width="134" />
+                            <Label styleClass="state-badge, state-badge-unassigned" text="UNASSIGNED" StackPane.alignment="TOP_RIGHT" />
+                            <Label styleClass="photo-filename" text="IMG_0260.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                        </StackPane>
+                    </FlowPane>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- ============ STATUS BAR ============ -->
+    <bottom>
+        <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+            <Label styleClass="triage-progress-label" text="24 photos total — 6 Yes, 4 Rather Yes, 8 Unassigned, 3 Rather No, 3 No" />
+        </HBox>
+    </bottom>
+
+</BorderPane>

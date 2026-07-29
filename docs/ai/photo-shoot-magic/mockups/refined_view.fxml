@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  VISUAL REFERENCE ONLY - not production code.
+  Represents: Refined View (populated state — album has Yes photos)
+  - Shows only photos with state = Yes.
+  - One tile is marked as the user-selected cover photo (§6).
+  - Note: the "locked / no Yes photos yet" empty-state variant is not
+    included here since it wasn't in the requested 4 screens — happy to
+    add it as a 5th mockup if useful.
+-->
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<BorderPane prefHeight="640" prefWidth="960" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+
+    <!-- ============ TOP TOOLBAR ============ -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="toolbar">
+            <Label styleClass="toolbar-title" text="Iceland Trip 2026" />
+            <Region HBox.hgrow="ALWAYS" />
+            <ToggleButton styleClass="view-toggle" text="Unrefined" />
+            <ToggleButton selected="true" styleClass="view-toggle" text="Refined" />
+            <Separator orientation="VERTICAL" />
+            <Button styleClass="toolbar-button" text="Select Cover Photo" />
+        </HBox>
+    </top>
+
+    <!-- ============ REFINED PHOTO GRID (Yes only) ============ -->
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <FlowPane hgap="12" style="-fx-padding: 16;" vgap="12">
+
+                <!-- Cover photo -->
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="cover-badge" text="COVER" StackPane.alignment="TOP_LEFT" />
+                    <Label styleClass="photo-filename" text="IMG_0231.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="photo-filename" text="IMG_0248.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="photo-filename" text="IMG_0252.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="photo-filename" text="IMG_0267.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="photo-filename" text="IMG_0271.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+                <StackPane prefHeight="150" prefWidth="150" styleClass="photo-tile, state-yes">
+                    <Rectangle height="144" styleClass="photo-placeholder-fill" width="144" />
+                    <Label styleClass="photo-filename" text="IMG_0290.jpg" StackPane.alignment="BOTTOM_LEFT" />
+                </StackPane>
+
+            </FlowPane>
+        </ScrollPane>
+    </center>
+
+    <!-- ============ STATUS BAR ============ -->
+    <bottom>
+        <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+            <Label styleClass="triage-progress-label" text="6 of 24 photos kept (Yes)" />
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,155 @@
+/* ============================================================
+   Shared style reference for album refinement UI mockups.
+   Colors/spacing are placeholders — swap for your app's theme.
+   ============================================================ */
+
+.root {
+    -fx-background-color: #1e1f22;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+/* ---- Top toolbar ---- */
+.toolbar {
+    -fx-background-color: #2b2d31;
+    -fx-padding: 10 16 10 16;
+    -fx-spacing: 10;
+}
+.toolbar-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f2f3f5;
+}
+.toolbar-button {
+    -fx-background-color: #3a3d42;
+    -fx-text-fill: #dcddde;
+    -fx-background-radius: 4;
+    -fx-padding: 6 12 6 12;
+}
+.toolbar-button:hover { -fx-background-color: #46494f; }
+.toolbar-button-primary {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: #10331f;
+    -fx-font-weight: bold;
+    -fx-background-radius: 4;
+    -fx-padding: 6 14 6 14;
+}
+.view-toggle {
+    -fx-background-color: #3a3d42;
+    -fx-background-radius: 4;
+    -fx-text-fill: #dcddde;
+    -fx-padding: 6 14 6 14;
+}
+.view-toggle:selected {
+    -fx-background-color: #5865f2;
+    -fx-text-fill: white;
+}
+
+/* ---- Scene group section ---- */
+.scene-group-header {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b5bac1;
+    -fx-padding: 4 0 4 0;
+}
+.scene-group-box {
+    -fx-background-color: #232428;
+    -fx-background-radius: 6;
+    -fx-padding: 12;
+}
+.bulk-action-button {
+    -fx-background-color: #35373c;
+    -fx-text-fill: #dcddde;
+    -fx-font-size: 11px;
+    -fx-background-radius: 3;
+    -fx-padding: 3 8 3 8;
+}
+
+/* ---- Photo tile ---- */
+.photo-tile {
+    -fx-background-color: #111214;
+    -fx-background-radius: 4;
+    -fx-border-width: 3;
+    -fx-border-radius: 4;
+}
+.photo-placeholder-fill { -fx-fill: #4b4d52; }
+.photo-filename {
+    -fx-font-size: 10px;
+    -fx-text-fill: #949ba4;
+}
+
+/* state border colors (color = state, per spec) */
+.state-no          { -fx-border-color: #e74c3c; }
+.state-rather-no    { -fx-border-color: #e67e22; }
+.state-unassigned   { -fx-border-color: #7f8c8d; }
+.state-rather-yes   { -fx-border-color: #a3d977; }
+.state-yes          { -fx-border-color: #2ecc71; }
+
+.state-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+    -fx-text-fill: white;
+}
+.state-badge-no        { -fx-background-color: #e74c3c; }
+.state-badge-rather-no  { -fx-background-color: #e67e22; }
+.state-badge-unassigned { -fx-background-color: #7f8c8d; }
+.state-badge-rather-yes { -fx-background-color: #a3d977; }
+.state-badge-yes        { -fx-background-color: #2ecc71; }
+
+.cover-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+    -fx-background-color: #f1c40f;
+    -fx-text-fill: #33290a;
+}
+
+/* ---- Triage mode ---- */
+.triage-header-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f2f3f5;
+}
+.triage-progress-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #949ba4;
+}
+.shortcut-hint-bar {
+    -fx-background-color: #2b2d31;
+    -fx-padding: 8 16 8 16;
+    -fx-spacing: 20;
+}
+.shortcut-hint-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: #949ba4;
+}
+
+/* drag targets (triage dragging state) */
+.drag-target {
+    -fx-background-color: rgba(255,255,255,0.04);
+    -fx-border-color: #555a61;
+    -fx-border-width: 2;
+    -fx-border-style: segments(6,4);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.drag-target-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b5bac1;
+}
+.drag-target-active {
+    -fx-border-style: solid;
+    -fx-border-width: 3;
+}
+.drag-target-active-no        { -fx-background-color: rgba(231,76,60,0.20); -fx-border-color: #e74c3c; }
+.drag-target-active-rather-no  { -fx-background-color: rgba(230,126,34,0.20); -fx-border-color: #e67e22; }
+.drag-target-active-rather-yes { -fx-background-color: rgba(163,217,119,0.20); -fx-border-color: #a3d977; }
+.drag-target-active-yes        { -fx-background-color: rgba(46,204,113,0.20); -fx-border-color: #2ecc71; }
+
+.dragging-tile {
+    -fx-opacity: 0.85;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 16, 0.3, 0, 4);
+}
