@@ -14,7 +14,7 @@
       <children>
       
           <!-- Notification text -->
-          <Label fx:id="messageLabel" text="xxxxxxxxxxxx" wrapText="true" style="-fx-text-fill: black;"/>
+          <Label fx:id="messageLabel" text="xxxxxxxxxxxx" wrapText="true" styleClass="notification-text"/>
       </children>
    </VBox>
 

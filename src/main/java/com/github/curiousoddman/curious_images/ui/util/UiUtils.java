@@ -107,6 +107,20 @@ public class UiUtils {
         fxManage(false, parent);
     }
 
+    /**
+     * Adds {@code styleClass} to {@code node} when {@code active} is true, removes it otherwise.
+     * Safe to call repeatedly (won't add duplicate entries).
+     */
+    public static void fxToggleClass(Node node, String styleClass, boolean active) {
+        if (active) {
+            if (!node.getStyleClass().contains(styleClass)) {
+                node.getStyleClass().add(styleClass);
+            }
+        } else {
+            node.getStyleClass().remove(styleClass);
+        }
+    }
+
     public static void registerZoomInOnHover(Node... nodes) {
         for (Node node : nodes) {
             ScaleTransition zoomIn = new ScaleTransition(Duration.millis(120), node);

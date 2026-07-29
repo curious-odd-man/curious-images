@@ -4,6 +4,7 @@ import com.github.curiousoddman.curious_images.model.GridCellData;
 import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.PersonDetails;
 import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
+import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
 import com.github.curiousoddman.curious_images.ui.util.GridContextMenu;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxManage;
+import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxToggleClass;
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.fxUnmanage;
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.registerHoverTooltip;
 import static com.github.curiousoddman.curious_images.ui.util.UiUtils.registerZoomInOnHover;
@@ -239,7 +241,7 @@ public class GridCellController implements Initializable {
 
     public void setSelected(boolean selected) {
         fxManage(selected, selectionCheckIcon);
-        cellRoot.setStyle(selected ? "-fx-border-color: #2979FF; -fx-border-width: 3;" : "");
+        fxToggleClass(cellRoot, CssClasses.GRID_CELL_SELECTED, selected);
     }
 
     private record TagData(String name, double score) {

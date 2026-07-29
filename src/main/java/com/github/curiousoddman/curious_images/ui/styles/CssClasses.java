@@ -22,4 +22,18 @@ public class CssClasses {
 
     public static final String ERROR_NOTIFICATION_ICON   = "error-notification-icon";
     public static final String WARNING_NOTIFICATION_ICON = "warning-notification-icon";
+
+    // Photo grid cell selection border (GridCellController#setSelected toggles this dynamically)
+    public static final String GRID_CELL_SELECTED = "grid-cell-selected";
+
+    // Notification detail/message text (NotificationMenuItemController)
+    public static final String NOTIFICATION_TEXT = "notification-text";
+
+    // Theme picker popup panel (ThemePickerButton)
+    public static final String THEME_PICKER_PANEL  = "theme-picker-panel";
+    public static final String THEME_PICKER_HEADER = "theme-picker-header";
+    public static final String THEME_PICKER_ROW    = "theme-picker-row";
+    public static final String THEME_PICKER_SWATCH = "theme-picker-swatch";
+    public static final String THEME_PICKER_CHECK  = "theme-picker-check";
+    public static final String BOLD_LABEL          = "bold-label";
 }

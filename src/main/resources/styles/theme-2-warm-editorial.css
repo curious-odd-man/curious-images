@@ -431,3 +431,48 @@ FontIcon {
 .icon-selection { -fx-icon-color: -accent; }
 .icon-overlay   { -fx-icon-color: #faf6f0; }
 .text-face-count { -fx-text-fill: #3d6fa8; }
+
+/* ---- Grid cell selection border (GridCellController#setSelected) ---- */
+.grid-cell-selected {
+    -fx-border-color: -accent;
+    -fx-border-width: 3;
+}
+
+/* ---- Notification text (NotificationMenuItemController) ---- */
+.notification-text {
+    -fx-text-fill: -text-primary;
+}
+
+/* ---- Theme picker popup panel (ThemePickerButton) ---- */
+.theme-picker-panel {
+    -fx-background-color: -bg-elevated;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-effect: dropshadow(gaussian, rgba(53,48,42,0.25), 12, 0, 0, 2);
+}
+
+.theme-picker-header {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-secondary;
+    -fx-padding: 4 8 6 8;
+}
+
+.theme-picker-row {
+    -fx-background-radius: 2;
+    -fx-cursor: hand;
+}
+
+.theme-picker-row:hover {
+    -fx-background-color: -bg-hover;
+}
+
+.theme-picker-swatch {
+    -fx-background-radius: 2;
+}
+
+.theme-picker-check {
+    -fx-text-fill: -accent;
+    -fx-font-weight: bold;
+}

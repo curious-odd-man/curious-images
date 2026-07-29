@@ -161,3 +161,158 @@
     -fx-border-color: red;
     -fx-border-width: 1px;
 }*/
+
+/* ============================================================
+   ADDED: fills in everything introduced for the theme-switching
+   system so the "Simple" default theme has full parity — TreeView,
+   MenuBar/Menu, TitledPane/Accordion, ChoiceBox/Spinner/Slider,
+   ProgressIndicator/Bar, SplitPane, Ikonli FontIcon (default +
+   semantic + category classes), grid-cell selection border,
+   notification text, and the theme-picker popup panel.
+   Colors here reuse the palette already established above
+   (#2f7dd1 accent, #666666 muted text, #aaaaaa borders, etc.)
+   rather than introducing a new one.
+   ============================================================ */
+
+/* ---- TreeView (library tree, age-album tree) ---- */
+.tree-cell:filled:hover {
+    -fx-background-color: derive(#2f7dd1, 90%);
+}
+
+.tree-cell:filled:selected,
+.tree-cell:filled:selected:focused {
+    -fx-background-color: #2f7dd1;
+    -fx-text-fill: white;
+}
+
+.tree-cell .tree-disclosure-node .arrow {
+    -fx-background-color: #666666;
+}
+
+.tree-cell:selected .tree-disclosure-node .arrow {
+    -fx-background-color: white;
+}
+
+/* ---- MenuBar / Menu / MenuItem ---- */
+.menu-bar {
+    -fx-border-color: transparent transparent #dddddd transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.menu-item:focused,
+.menu-item:hover {
+    -fx-background-color: #2f7dd1;
+}
+
+.menu-item:focused .label,
+.menu-item:hover .label {
+    -fx-text-fill: white;
+}
+
+/* ---- TitledPane / Accordion ---- */
+.titled-pane > .title {
+    -fx-border-color: #aaaaaa;
+    -fx-border-width: 1;
+}
+
+.accordion .titled-pane:expanded > .title {
+    -fx-background-color: derive(#2f7dd1, 92%);
+}
+
+/* ---- Slider / ProgressIndicator / ProgressBar ---- */
+.slider .track {
+    -fx-background-color: #cccccc;
+}
+
+.slider .thumb {
+    -fx-background-color: #2f7dd1;
+}
+
+.progress-indicator .determinate-indicator .indicator {
+    -fx-background-color: #2f7dd1;
+}
+
+.progress-bar .track {
+    -fx-background-color: #dddddd;
+    -fx-background-radius: 4;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #2f7dd1;
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
+}
+
+/* ---- SplitPane ---- */
+.split-pane-divider {
+    -fx-background-color: #dddddd;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ---- Ikonli FontIcon ---- */
+.icon,
+FontIcon {
+    -fx-icon-color: #666666;
+}
+
+.icon-success { -fx-icon-color: #2e7d32; }
+.icon-danger  { -fx-icon-color: #c62828; }
+.icon-warning { -fx-icon-color: #e1b400; }
+.icon-info    { -fx-icon-color: #2f7dd1; }
+.icon-muted   { -fx-icon-color: #666666; }
+
+/* Category classes (photo grid metadata badges) */
+.icon-type      { -fx-icon-color: #5C6BC0; }
+.icon-tag       { -fx-icon-color: #00897B; }
+.icon-location  { -fx-icon-color: #43A047; }
+.icon-face      { -fx-icon-color: #1976D2; }
+.icon-duplicate { -fx-icon-color: #F57C00; }
+.icon-selection { -fx-icon-color: #2979FF; }
+.icon-overlay   { -fx-icon-color: white; }
+
+.text-face-count { -fx-text-fill: #1976D2; }
+
+/* ---- Grid cell selection border (GridCellController#setSelected) ---- */
+.grid-cell-selected {
+    -fx-border-color: #2979FF;
+    -fx-border-width: 3;
+}
+
+/* ---- Notification text (NotificationMenuItemController) ---- */
+.notification-text {
+    -fx-text-fill: black;
+}
+
+/* ---- Theme picker popup panel (ThemePickerButton) ---- */
+.theme-picker-panel {
+    -fx-background-color: white;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 12, 0, 0, 2);
+}
+
+.theme-picker-header {
+    -fx-font-size: 11px;
+    -fx-text-fill: #8a8a8a;
+    -fx-padding: 4 8 6 8;
+}
+
+.theme-picker-row {
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.theme-picker-row:hover {
+    -fx-background-color: #f2f2f7;
+}
+
+.theme-picker-swatch {
+    -fx-background-radius: 6;
+}
+
+.theme-picker-check {
+    -fx-text-fill: #2f7dd1;
+    -fx-font-weight: bold;
+}

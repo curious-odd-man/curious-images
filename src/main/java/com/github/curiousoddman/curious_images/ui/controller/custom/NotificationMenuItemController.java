@@ -1,6 +1,7 @@
 package com.github.curiousoddman.curious_images.ui.controller.custom;
 
 import com.github.curiousoddman.curious_images.model.bundle.NotificationMenuItemBundle;
+import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -33,7 +34,7 @@ public class NotificationMenuItemController implements Initializable {
             messageLabel.setText(bundle.getMessage());
             for (String detail : bundle.getDetails()) {
                 Label l = new Label(detail);
-                l.setStyle("-fx-text-fill: black;");
+                l.getStyleClass().add(CssClasses.NOTIFICATION_TEXT);
                 detailsVbox.getChildren()
                            .add(l);
             }

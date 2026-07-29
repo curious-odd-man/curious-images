@@ -1,5 +1,6 @@
 package com.github.curiousoddman.curious_images.ui.nodes;
 
+import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
 import com.github.curiousoddman.curious_images.ui.styles.Theme;
 import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.geometry.Bounds;
@@ -8,20 +9,11 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.Border;
-import javafx.scene.layout.BorderStroke;
-import javafx.scene.layout.BorderStrokeStyle;
-import javafx.scene.layout.BorderWidths;
-import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 
 public class ThemePickerButton {
@@ -54,16 +46,13 @@ public class ThemePickerButton {
     private VBox buildPanel() {
         VBox panel = new VBox(2);
         panel.setPadding(new Insets(6));
-        panel.setBackground(new Background(new BackgroundFill(
-                Color.WHITE, new CornerRadii(8), Insets.EMPTY)));
-        panel.setBorder(new Border(new BorderStroke(
-                Color.web("#e0e0e0"), BorderStrokeStyle.SOLID,
-                new CornerRadii(8), new BorderWidths(1))));
-        panel.setEffect(new DropShadow(12, Color.rgb(0, 0, 0, 0.18)));
+        panel.getStyleClass()
+             .add(CssClasses.THEME_PICKER_PANEL);
         panel.setMinWidth(180);
 
         Label header = new Label("Choose a theme");
-        header.setStyle("-fx-font-size: 11px; -fx-text-fill: #8a8a8a; -fx-padding: 4 8 6 8;");
+        header.getStyleClass()
+              .add(CssClasses.THEME_PICKER_HEADER);
         panel.getChildren()
              .add(header);
 
@@ -81,15 +70,22 @@ public class ThemePickerButton {
         Label swatch = new Label();
         swatch.setMinSize(12, 12);
         swatch.setMaxSize(12, 12);
-        swatch.setStyle("-fx-background-color: " + swatchColorFor(theme) + "; -fx-background-radius: 6;");
+        swatch.getStyleClass()
+              .add(CssClasses.THEME_PICKER_SWATCH);
+        // The swatch previews the color of the OPTION being rendered, not the currently active
+        // theme, so this one genuinely needs a per-row dynamic color and can't be a static CSS
+        // class the way the rest of the panel now is.
+        swatch.setStyle("-fx-background-color: " + swatchColorFor(theme) + ";");
 
         Label name = new Label(theme.getDisplayName());
-        name.setStyle(isCurrent
-                ? "-fx-font-weight: bold;"
-                : "-fx-font-weight: normal;");
+        if (isCurrent) {
+            name.getStyleClass()
+                .add(CssClasses.BOLD_LABEL);
+        }
 
         Label check = new Label(isCurrent ? "\u2713" : "");
-        check.setStyle("-fx-text-fill: #5b5ff0; -fx-font-weight: bold;");
+        check.getStyleClass()
+             .add(CssClasses.THEME_PICKER_CHECK);
 
         var spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -97,10 +93,8 @@ public class ThemePickerButton {
         HBox row = new HBox(8, swatch, name, spacer, check);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(6, 8, 6, 8));
-        row.setStyle("-fx-background-radius: 4; -fx-cursor: hand;");
-
-        row.setOnMouseEntered(e -> row.setStyle("-fx-background-radius: 4; -fx-cursor: hand; -fx-background-color: #f2f2f7;"));
-        row.setOnMouseExited(e -> row.setStyle("-fx-background-radius: 4; -fx-cursor: hand;"));
+        row.getStyleClass()
+           .add(CssClasses.THEME_PICKER_ROW);
 
         row.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.PRIMARY) {
@@ -118,7 +112,7 @@ public class ThemePickerButton {
             case WARM -> "#c1633b";
             case MONO -> "#2d2d2d";
             case VIBRANT -> "#5b5ff0";
-            case SIMPLE -> "#000000";
+            case SIMPLE -> "#2f7dd1";
         };
     }
 }
