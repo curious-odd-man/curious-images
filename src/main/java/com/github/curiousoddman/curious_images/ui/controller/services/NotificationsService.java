@@ -9,6 +9,7 @@ import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
 import com.github.curiousoddman.curious_images.ui.controller.custom.NotificationMenuItemController;
 import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -46,6 +47,7 @@ public class NotificationsService {
 
         popup.setAutoHide(true);   // closes automatically on outside click / focus loss
         popup.setHideOnEscape(true);
+        ThemeManager.register(popup.getScene());
 
         notificationsMenu.setOnAction(this::onNotificationsOpenClick);
     }

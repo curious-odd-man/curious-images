@@ -29,6 +29,8 @@ public class ThemePickerButton {
         popup.getContent()
              .add(buildPanel());
 
+        ThemeManager.register(popup.getScene());
+
         parent.setOnAction(e -> togglePopup());
     }
 

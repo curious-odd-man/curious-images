@@ -316,3 +316,22 @@ FontIcon {
     -fx-text-fill: #2f7dd1;
     -fx-font-weight: bold;
 }
+
+/* ---- ListView row striping fix (photo grid rows, any other ListView) ----
+   Modena gives filled ListCells alternating even/odd backgrounds by default,
+   which shows through as white/grey stripes regardless of theme. Neutralize
+   it so only .list-view's own background (already themed above) shows. */
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.list-cell:filled:even,
+.list-cell:filled:odd {
+    -fx-background-color: transparent;
+}
+
+.list-cell:filled:selected,
+.list-cell:filled:selected:focused {
+    -fx-background-color: transparent;
+}
