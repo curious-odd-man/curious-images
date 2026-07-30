@@ -3,8 +3,12 @@ package com.github.curiousoddman.curious_images.ui.util;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.Window;
 import lombok.experimental.UtilityClass;
+
+import java.util.Optional;
 
 /**
  * Single place that knows how to build/show the app's {@link Alert} dialogs.
@@ -56,6 +60,22 @@ public final class AlertHelper {
                     .isPresent();
     }
 
+    /**
+     * Blocking single-line text prompt (e.g. "New album name"). Returns empty if the user
+     * cancelled or submitted a blank/whitespace-only value — callers don't need to re-check.
+     */
+    public static Optional<String> promptText(Node ownerNode, String title, String headerText,
+                                              String defaultValue) {
+        TextInputDialog dialog = new TextInputDialog(defaultValue);
+        dialog.setTitle(title);
+        dialog.setHeaderText(headerText);
+        dialog.setGraphic(null);
+        applyOwner(dialog, ownerNode);
+        return dialog.showAndWait()
+                     .map(String::trim)
+                     .filter(value -> !value.isEmpty());
+    }
+
     private static void show(Node ownerNode, Alert.AlertType type, String title, String headerText, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
@@ -65,12 +85,12 @@ public final class AlertHelper {
         alert.showAndWait();
     }
 
-    private static void applyOwner(Alert alert, Node ownerNode) {
+    private static void applyOwner(Dialog<?> dialog, Node ownerNode) {
         if (ownerNode != null && ownerNode.getScene() != null) {
             Window owner = ownerNode.getScene()
                                     .getWindow();
             if (owner != null) {
-                alert.initOwner(owner);
+                dialog.initOwner(owner);
             }
         }
     }

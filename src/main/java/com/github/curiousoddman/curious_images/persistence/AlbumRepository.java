@@ -67,4 +67,20 @@ public class AlbumRepository {
                   .orderBy(ALBUM.NAME)
                   .fetch();
     }
+
+    /**
+     * Renames an AI-generated album's display name in place. Be aware: {@code AlbumGenerationJob}
+     * rebuilds each type wholesale (delete-by-type then reinsert) on every
+     * {@code AiPipelineCompleteEvent}, using a derived name (person/date-range/GPS-bounds based).
+     * A user-entered rename here therefore only survives until the next AI pipeline run for that
+     * album's type — reconsider whether this is the desired behavior, or whether rename should be
+     * Custom-albums-only after all, before relying on it.
+     */
+    public void rename(long albumId, String newName, LocalDateTime now) {
+        dsl.update(ALBUM)
+           .set(ALBUM.NAME, newName)
+           .set(ALBUM.UPDATED_AT, now)
+           .where(ALBUM.ID.eq(albumId))
+           .execute();
+    }
 }

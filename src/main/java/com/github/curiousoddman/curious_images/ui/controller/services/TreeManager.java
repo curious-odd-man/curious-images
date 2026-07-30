@@ -1,6 +1,7 @@
 package com.github.curiousoddman.curious_images.ui.controller.services;
 
 import com.github.curiousoddman.curious_images.dbobj.tables.records.AlbumRecord;
+import com.github.curiousoddman.curious_images.dbobj.tables.records.CustomAlbumRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.FolderRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportRootRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.PersonRecord;
@@ -12,6 +13,7 @@ import com.github.curiousoddman.curious_images.event.payload.TreeViewUpdatePaylo
 import com.github.curiousoddman.curious_images.model.ImportJobStats;
 import com.github.curiousoddman.curious_images.model.TimelineData;
 import com.github.curiousoddman.curious_images.persistence.AlbumRepository;
+import com.github.curiousoddman.curious_images.persistence.CustomAlbumRepository;
 import com.github.curiousoddman.curious_images.persistence.FolderRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportJobStatsRepository;
 import com.github.curiousoddman.curious_images.persistence.ImportRootRepository;
@@ -49,11 +51,12 @@ public class TreeManager {
             new AlbumTypeGroup("LOCATION", "Location", LibraryTreeNode.NodeType.ALBUM_LOCATION_ROOT, LibraryTreeNode.NodeType.ALBUM_LOCATION),
             new AlbumTypeGroup("SIMILARITY", "Similarity", LibraryTreeNode.NodeType.ALBUM_SIMILARITY_ROOT, LibraryTreeNode.NodeType.ALBUM_SIMILARITY));
 
-    private final ImportRootRepository importRootRepository;
-    private final FolderRepository folderRepository;
-    private final MediaRepository  mediaRepository;
-    private final AlbumRepository  albumRepository;
-    private final PersonRepository     personRepository;
+    private final ImportRootRepository     importRootRepository;
+    private final FolderRepository         folderRepository;
+    private final MediaRepository          mediaRepository;
+    private final AlbumRepository          albumRepository;
+    private final CustomAlbumRepository    customAlbumRepository;
+    private final PersonRepository         personRepository;
     private final ImportJobStatsRepository importJobStatsRepository;
 
     private TreeView<LibraryTreeNode> libraryTreeView;
@@ -88,7 +91,7 @@ public class TreeManager {
      */
     public TreeItem<LibraryTreeNode> buildImportStatsItem() {
         String label = importStatsLabel(importJobStatsRepository.findLast()
-                                                                 .orElse(null));
+                                                                .orElse(null));
         return new TreeItem<>(new LibraryTreeNode(label, null, LibraryTreeNode.NodeType.IMPORT_STATS));
     }
 
@@ -96,7 +99,8 @@ public class TreeManager {
         if (stats == null) {
             return "Last Import";
         }
-        String suffix = stats.status().asText();
+        String suffix = stats.status()
+                             .asText();
         return "Last Import (" + suffix + ")";
     }
 
@@ -187,7 +191,29 @@ public class TreeManager {
 
             items.add(groupRoot);
         }
+        items.add(buildCustomAlbumGroup());
         return items;
+    }
+
+    /**
+     * "Custom" group root under Albums — user-created albums (album-refinement-feature-spec.md),
+     * backed by {@code custom_album} rather than {@code album}. Built separately from the
+     * {@link #ALBUM_TYPE_GROUPS} loop above since it reads a different repository/table
+     * entirely, not just a different {@code type} value of the same one.
+     */
+    private TreeItem<LibraryTreeNode> buildCustomAlbumGroup() {
+        TreeItem<LibraryTreeNode> groupRoot = new TreeItem<>(
+                new LibraryTreeNode("Custom", null, LibraryTreeNode.NodeType.ALBUM_CUSTOM_ROOT));
+        List<TreeItem<LibraryTreeNode>> children = new ArrayList<>();
+        for (CustomAlbumRecord album : customAlbumRepository.findAll()) {
+            children.add(new TreeItem<>(new LibraryTreeNode(
+                    album.getName(), new NodePayload.CustomAlbumPayload(album.getId()),
+                    LibraryTreeNode.NodeType.ALBUM_CUSTOM)));
+        }
+        groupRoot.getChildren()
+                 .setAll(children);
+        groupRoot.setExpanded(false);
+        return groupRoot;
     }
 
     public List<TreeItem<LibraryTreeNode>> buildPersonItems() {
@@ -302,7 +328,7 @@ public class TreeManager {
             }
             for (TreeItem<LibraryTreeNode> section : root.getChildren()) {
                 if (section.getValue() == null || section.getValue()
-                                                          .type() != LibraryTreeNode.NodeType.FOLDERS_ROOT) {
+                                                         .type() != LibraryTreeNode.NodeType.FOLDERS_ROOT) {
                     continue;
                 }
                 for (TreeItem<LibraryTreeNode> child : section.getChildren()) {
@@ -323,25 +349,85 @@ public class TreeManager {
         if (root == null) {
             return;
         }
+        switch (event.getPayload()) {
+            case TreeViewUpdatePayload.PersonRename(long personId, String newName) ->
+                    findSection(root, LibraryTreeNode.NodeType.PERSONS_ROOT).ifPresent(section ->
+                            findPersonNode(section, personId).ifPresent(item -> runOnFxThread(() ->
+                                    renameInPlace(item, newName))));
+            case TreeViewUpdatePayload.PersonDelete(long personId) ->
+                    findSection(root, LibraryTreeNode.NodeType.PERSONS_ROOT).ifPresent(section ->
+                            findPersonNode(section, personId).ifPresent(item ->
+                                    runOnFxThread(() -> section.getChildren()
+                                                               .remove(item))));
+            case TreeViewUpdatePayload.AlbumRename(long albumId, String newName) ->
+                    findSection(root, LibraryTreeNode.NodeType.ALBUMS_ROOT).ifPresent(albumsSection ->
+                            findAlbumNode(albumsSection, albumId).ifPresent(item -> runOnFxThread(() ->
+                                    renameInPlace(item, newName))));
+            case TreeViewUpdatePayload.CustomAlbumRename(long customAlbumId, String newName) ->
+                    findSection(root, LibraryTreeNode.NodeType.ALBUMS_ROOT)
+                            .flatMap(this::findCustomAlbumGroupRoot)
+                            .flatMap(customRoot -> findCustomAlbumNode(customRoot, customAlbumId))
+                            .ifPresent(item -> runOnFxThread(() -> renameInPlace(item, newName)));
+            case TreeViewUpdatePayload.CustomAlbumCreate(long customAlbumId, String name) ->
+                    findSection(root, LibraryTreeNode.NodeType.ALBUMS_ROOT)
+                            .flatMap(this::findCustomAlbumGroupRoot)
+                            .ifPresent(customRoot -> runOnFxThread(() -> {
+                                customRoot.getChildren()
+                                          .add(new TreeItem<>(new LibraryTreeNode(name,
+                                                  new NodePayload.CustomAlbumPayload(customAlbumId),
+                                                  LibraryTreeNode.NodeType.ALBUM_CUSTOM)));
+                                customRoot.setExpanded(true);
+                            }));
+            default -> throw new UnsupportedOperationException();
+        }
+    }
+
+    private void renameInPlace(TreeItem<LibraryTreeNode> item, String newName) {
+        LibraryTreeNode value = item.getValue();
+        item.setValue(new LibraryTreeNode(newName, value.payload(), value.type()));
+    }
+
+    private Optional<TreeItem<LibraryTreeNode>> findSection(TreeItem<LibraryTreeNode> root, LibraryTreeNode.NodeType type) {
         for (TreeItem<LibraryTreeNode> section : root.getChildren()) {
-            if (section.getValue() == null || section.getValue()
-                                                     .type() != LibraryTreeNode.NodeType.PERSONS_ROOT) {
-                continue;
-            }
-            switch (event.getPayload()) {
-                case TreeViewUpdatePayload.PersonRename(long personId, String newName) ->
-                        findPersonNode(section, personId)
-                                .ifPresent(personItem -> runOnFxThread(() -> {
-                                    LibraryTreeNode value = personItem.getValue();
-                                    personItem.setValue(new LibraryTreeNode(newName, value.payload(), value.type()));
-                                }));
-                case TreeViewUpdatePayload.PersonDelete(long personId) ->
-                        findPersonNode(section, personId).ifPresent(personItem ->
-                                runOnFxThread(() -> section.getChildren()
-                                                           .remove(personItem)));
-                default -> throw new UnsupportedOperationException();
+            if (section.getValue() != null && section.getValue()
+                                                     .type() == type) {
+                return Optional.of(section);
             }
         }
+        return Optional.empty();
+    }
+
+    private Optional<TreeItem<LibraryTreeNode>> findCustomAlbumGroupRoot(TreeItem<LibraryTreeNode> albumsSection) {
+        return findSection(albumsSection, LibraryTreeNode.NodeType.ALBUM_CUSTOM_ROOT);
+    }
+
+    /**
+     * Searches every album-kind group under Albums (Event/Location/Similarity, not Custom) for a
+     * leaf whose {@link NodePayload.AlbumPayload} matches. Which specific group it's in doesn't
+     * matter for rename — {@code album.id} is unique across all AI-generated types.
+     */
+    private Optional<TreeItem<LibraryTreeNode>> findAlbumNode(TreeItem<LibraryTreeNode> albumsSection, long lookupId) {
+        for (TreeItem<LibraryTreeNode> group : albumsSection.getChildren()) {
+            for (TreeItem<LibraryTreeNode> albumItem : group.getChildren()) {
+                LibraryTreeNode node = albumItem.getValue();
+                if (node != null && node.payload() instanceof NodePayload.AlbumPayload(long albumId)
+                        && albumId == lookupId) {
+                    return Optional.of(albumItem);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<TreeItem<LibraryTreeNode>> findCustomAlbumNode(TreeItem<LibraryTreeNode> customRoot, long lookupId) {
+        for (TreeItem<LibraryTreeNode> item : customRoot.getChildren()) {
+            LibraryTreeNode node = item.getValue();
+            if (node != null && node.payload() instanceof NodePayload.CustomAlbumPayload(long customAlbumId)
+                    && customAlbumId == lookupId) {
+                return Optional.of(item);
+            }
+        }
+        return Optional.empty();
     }
 
     private Optional<TreeItem<LibraryTreeNode>> findPersonNode(TreeItem<LibraryTreeNode> section, long lookupId) {

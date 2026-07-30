@@ -15,6 +15,8 @@ import com.github.curiousoddman.curious_images.model.UiElement;
 import com.github.curiousoddman.curious_images.model.bundle.AddFilesBundle;
 import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
 import com.github.curiousoddman.curious_images.model.bundle.RescanBundle;
+import com.github.curiousoddman.curious_images.persistence.AlbumRepository;
+import com.github.curiousoddman.curious_images.persistence.CustomAlbumRepository;
 import com.github.curiousoddman.curious_images.persistence.MediaRepository;
 import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
@@ -36,6 +38,7 @@ import com.github.curiousoddman.curious_images.ui.nodes.NodePayload.UndatedPaylo
 import com.github.curiousoddman.curious_images.ui.nodes.ThemePickerButton;
 import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import com.github.curiousoddman.curious_images.ui.util.AlertHelper;
+import com.github.curiousoddman.curious_images.util.TimeProvider;
 import com.github.curiousoddman.curious_images.util.async.DelayedAction;
 import com.github.curiousoddman.curious_images.util.async.jobs.JobManager;
 import javafx.beans.InvalidationListener;
@@ -66,6 +69,7 @@ import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -91,6 +95,10 @@ public class LibraryController implements Initializable {
     private final FxmlLoader                fxmlLoader;
     private final UserPreferencesService    userPreferencesService;
     private final MediaRepository           mediaRepository;
+    private final AlbumRepository           albumRepository;
+    private final CustomAlbumRepository     customAlbumRepository;
+    private final TimeProvider              timeProvider;
+    private final ApplicationEventPublisher eventPublisher;
     private final SearchService             searchService;
     private final JobManager                jobManager;
     private final ModelPaths                modelPaths;
@@ -157,7 +165,7 @@ public class LibraryController implements Initializable {
     @SneakyThrows
     public void initialize(URL location, ResourceBundle resources) {
         notificationsService.initialize(notificationsMenu);
-        libraryTreeView.setCellFactory(tv -> new LibraryTreeCell());
+        libraryTreeView.setCellFactory(tv -> new LibraryTreeCell(customAlbumRepository, albumRepository, timeProvider, eventPublisher));
         libraryTreeView.getSelectionModel()
                        .selectedItemProperty()
                        .addListener((obs, oldItem, newItem) -> onTreeSelectionChanged(newItem));
@@ -321,6 +329,14 @@ public class LibraryController implements Initializable {
             }
             case PersonPayload pp ->
                     personDetailController = libraryViewManager.showPersonDetail(pp.personId(), new UiElement<>(personDetailContainer, personDetailController), new GridCellResources(this::onShowRightPanel));
+            case NodePayload.CustomAlbumPayload cap -> {
+                // TODO(Phase 5): wire to the custom-album panel (refined/unrefined toggle +
+                // triage entry point) via LibraryViewManager.showCustomAlbum(cap.customAlbumId()).
+                // Until that lands, fall back to a clear/empty grid rather than leaving whatever
+                // was previously selected showing.
+                libraryViewManager.showPhotoGrid();
+                photoGridManager.clear();
+            }
         }
     }
 
