@@ -8,13 +8,16 @@ package com.github.curiousoddman.curious_images.ui.nodes;
  * {@link UndatedPayload}  — node maps to photos whose {@code capture_date} is NULL.
  * {@link AlbumPayload}    — node maps to an {@code ALBUM} row; selecting it loads album photos.
  * {@link PersonPayload}   — node maps to a {@code PERSON} row; selecting it loads that person's photos.
+ * {@link CustomAlbumPayload} — node maps to a {@code CUSTOM_ALBUM} row; selecting it shows the
+ *                              refined/unrefined/triage views for that user-created album.
  */
 public sealed interface NodePayload
         permits NodePayload.FolderPayload,
         NodePayload.TimelinePayload,
         NodePayload.UndatedPayload,
         NodePayload.AlbumPayload,
-        NodePayload.PersonPayload {
+        NodePayload.PersonPayload,
+        NodePayload.CustomAlbumPayload {
 
     /**
      * Carries a {@code FOLDER.id}; used by IMPORT_ROOT and FOLDER nodes.
@@ -45,4 +48,10 @@ public sealed interface NodePayload
      * Carries a {@code PERSON.id}; selecting loads all photos featuring that person.
      */
     record PersonPayload(long personId) implements NodePayload {}
+
+    /**
+     * Carries a {@code CUSTOM_ALBUM.id}; selecting it shows the custom-album panel
+     * (refined/unrefined toggle + triage entry point) rather than a plain photo grid.
+     */
+    record CustomAlbumPayload(long customAlbumId) implements NodePayload {}
 }

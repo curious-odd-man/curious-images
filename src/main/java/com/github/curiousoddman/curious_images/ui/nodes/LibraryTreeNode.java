@@ -15,7 +15,11 @@ import org.kordamp.ikonli.materialdesign2.MaterialDesignM;
  * @param payload     what to load when this node is selected, or {@code null} for pure grouping
  *                    nodes (FOLDERS_ROOT, TIMELINE_ROOT, TIMELINE_YEAR, ALBUMS_ROOT,
  *                    ALBUM_EVENT_ROOT, ALBUM_LOCATION_ROOT, ALBUM_SIMILARITY_ROOT,
- *                    PERSONS_ROOT, DUPLICATES_ROOT) that show nothing. DUPLICATES_FILE_ROOT and
+ *                    ALBUM_CUSTOM_ROOT, PERSONS_ROOT, DUPLICATES_ROOT) that show nothing.
+ *                    ALBUM_CUSTOM_ROOT is also where the tree's inline "+" (new album) control
+ *                    lives — see {@code LibraryTreeCell} — since unlike the other album-kind
+ *                    roots, its children are user-created rather than AI-generated.
+ *                    DUPLICATES_FILE_ROOT and
  *                    DUPLICATES_FOLDER_ROOT also carry a {@code null} payload but are a special
  *                    case, same as the old DUPLICATES_ROOT was: selecting either shows a
  *                    duplicates-review view (see {@code LibraryController#onTreeSelectionChanged}) —
@@ -50,6 +54,11 @@ public record LibraryTreeNode(String displayName, NodePayload payload, NodeType 
         ALBUM_EVENT,
         ALBUM_LOCATION,
         ALBUM_SIMILARITY,
+        // Custom (user-created) albums — see album-refinement-feature-spec.md. Unlike the
+        // three AI-generated kinds above, ALBUM_CUSTOM_ROOT carries the inline "+" control and
+        // ALBUM_CUSTOM nodes support double-click rename.
+        ALBUM_CUSTOM_ROOT,
+        ALBUM_CUSTOM,
         // Persons (face-based)
         PERSONS_ROOT,
         PERSON,
@@ -78,6 +87,7 @@ public record LibraryTreeNode(String displayName, NodePayload payload, NodeType 
             case ALBUM_EVENT_ROOT, ALBUM_EVENT -> MaterialDesignC.CAMERA_BURST;
             case ALBUM_LOCATION_ROOT, ALBUM_LOCATION -> MaterialDesignM.MAP_MARKER_MULTIPLE;
             case ALBUM_SIMILARITY_ROOT, ALBUM_SIMILARITY -> MaterialDesignG.GOOGLE_PHOTOS;
+            case ALBUM_CUSTOM_ROOT, ALBUM_CUSTOM -> MaterialDesignF.FOLDER_STAR;
             case PERSONS_ROOT -> MaterialDesignA.ACCOUNT_GROUP;
             case PERSON -> MaterialDesignA.ACCOUNT;
             case DUPLICATES_ROOT -> MaterialDesignC.CONTENT_DUPLICATE;
