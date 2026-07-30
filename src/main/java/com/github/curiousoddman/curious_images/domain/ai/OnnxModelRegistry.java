@@ -44,8 +44,8 @@ public class OnnxModelRegistry implements DisposableBean {
         try {
             log.info("Loading ONNX model '{}' from {}: {}", modelKey, modelPath, OrtEnvironment.getAvailableProviders());
             OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
-            opts.setIntraOpNumThreads(config.getIntraOpThreads());
-            switch (config.getExecutionProvider()) {
+            opts.setIntraOpNumThreads(config.getOnnxIntraOpThreads());
+            switch (config.getAiExecutionProvider()) {
                 case CUDA -> opts.addCUDA(0);
                 case DIRECTML -> opts.addDirectML(0);
                 case CPU -> { /* ONNX Runtime default — no extra provider needed */ }

@@ -167,9 +167,9 @@ public class JobFactory {
                 jobManager,
                 imageUtils,
                 videoFrameSampler,
-                aiConfig.isFaceOnly(),
+                aiConfig.isAiPipelineFaceOnly(),
                 aiConfig.getVideoFrameSampleCount(),
-                aiConfig.getVideoFrameSampleIntervalSeconds(),
+                aiConfig.getVideoFrameSampleInterval(),
                 clipTextEncoder,
                 photoTagRepository
         );

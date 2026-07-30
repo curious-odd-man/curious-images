@@ -1,6 +1,7 @@
 package com.github.curiousoddman.curious_images.domain.ai;
 
 import com.github.curiousoddman.curious_images.config.AiConfig;
+import com.github.curiousoddman.curious_images.config.AiModelLink;
 import com.github.curiousoddman.curious_images.util.HumanReadableUtils;
 import com.github.curiousoddman.curious_images.util.async.jobs.BackgroundJob;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +61,7 @@ public class ModelDownloadJob extends BackgroundJob {
 
     @Override
     public void runImpl() throws Exception {
-        List<AiConfig.ModelDownload> missing = modelPaths.missingModels();
+        List<AiModelLink> missing = modelPaths.missingModels();
         if (missing.isEmpty()) {
             log.info("All models already present, nothing to download");
             publishEnded("Models already downloaded");
@@ -70,13 +71,13 @@ public class ModelDownloadJob extends BackgroundJob {
         publishStarted("Preparing to download " + missing.size() + " model file(s)...");
 
         long totalBytes = 0;
-        for (AiConfig.ModelDownload model : missing) {
+        for (AiModelLink model : missing) {
             totalBytes += Math.max(contentLength(model.getUrl()), 0);
         }
 
         long downloadedBytes = 0;
 
-        for (AiConfig.ModelDownload model : missing) {
+        for (AiModelLink model : missing) {
             if (isInterruptRequested()) {
                 publishInterrupted();
                 return;
@@ -109,7 +110,7 @@ public class ModelDownloadJob extends BackgroundJob {
      * {@code *.part} instead). Returns the updated cumulative-downloaded-bytes count used for the
      * overall progress bar.
      */
-    private long downloadOne(AiConfig.ModelDownload model, Path partial, Path target,
+    private long downloadOne(AiModelLink model, Path partial, Path target,
                              long downloadedBytesSoFar, long totalBytes) throws IOException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(model.getUrl()))
                                          .GET()

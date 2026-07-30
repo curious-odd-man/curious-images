@@ -1,8 +1,10 @@
 package com.github.curiousoddman.curious_images.ui.controller.screen;
 
 import com.github.curiousoddman.curious_images.config.AiConfig;
+import com.github.curiousoddman.curious_images.config.AiExecutionProvider;
 import com.github.curiousoddman.curious_images.config.AiSettingsService;
 import com.github.curiousoddman.curious_images.config.RuntimeSettingsBootstrap;
+import com.github.curiousoddman.curious_images.ui.nodes.DurationSpinner;
 import com.github.curiousoddman.curious_images.ui.util.AlertHelper;
 import com.github.curiousoddman.curious_images.ui.util.UiUtils;
 import javafx.fxml.FXML;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.net.URL;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.function.IntConsumer;
 
 /**
  * Controller for {@code settings.fxml}.
@@ -45,6 +48,7 @@ public class SettingsController implements Initializable {
 
     private final AiSettingsService aiSettingsService;
 
+
     @Value("${app.ai.index-root}")
     private String currentIndexRoot;
     @Value("${app.thumbnail-cache.dir}")
@@ -52,19 +56,17 @@ public class SettingsController implements Initializable {
 
     // ── Performance (live) ──────────────────────────────────────────────────────
     @FXML
-    public ChoiceBox<AiConfig.ExecutionProvider> executionProviderChoice;
+    public ChoiceBox<AiExecutionProvider> executionProviderChoice;
     @FXML
-    public Spinner<Integer>                      intraOpThreadsSpinner;
+    public Spinner<Integer>               intraOpThreadsSpinner;
     @FXML
-    public Spinner<Integer>                      batchSizeSpinner;
+    public Spinner<Integer>               dedupeThreadCountSpinner;
     @FXML
-    public Spinner<Integer>                      dedupeThreadCountSpinner;
-    @FXML
-    public CheckBox                              faceOnlyCheckBox;
+    public CheckBox                       faceOnlyCheckBox;
 
     // ── Album tuning (live) ──────────────────────────────────────────────────────
     @FXML
-    public Spinner<Integer> eventGapHoursSpinner;
+    public DurationSpinner  eventGapSpinner;
     @FXML
     public Spinner<Integer> minEventSizeSpinner;
     @FXML
@@ -78,7 +80,7 @@ public class SettingsController implements Initializable {
     @FXML
     public Spinner<Integer> videoFrameSampleCountSpinner;
     @FXML
-    public Spinner<Integer> videoFrameSampleIntervalSpinner;
+    public DurationSpinner  videoFrameSampleIntervalSpinner;
 
     // ── Storage (restart required) ───────────────────────────────────────────────
     @FXML
@@ -101,24 +103,21 @@ public class SettingsController implements Initializable {
 
         // Performance
         executionProviderChoice.getItems()
-                               .setAll(AiConfig.ExecutionProvider.values());
-        executionProviderChoice.setValue(config.getExecutionProvider());
+                               .setAll(AiExecutionProvider.values());
+        executionProviderChoice.setValue(config.getAiExecutionProvider());
         executionProviderChoice.setOnAction(e -> {
             if (!initializing) {
                 aiSettingsService.setExecutionProvider(executionProviderChoice.getValue());
             }
         });
 
-        intraOpThreadsSpinner.setValueFactory(intFactory(1, 64, config.getIntraOpThreads()));
+        intraOpThreadsSpinner.setValueFactory(intFactory(1, 64, config.getOnnxIntraOpThreads()));
         onIntChange(intraOpThreadsSpinner, aiSettingsService::setIntraOpThreads);
-
-        batchSizeSpinner.setValueFactory(intFactory(1, 128, config.getBatchSize()));
-        onIntChange(batchSizeSpinner, aiSettingsService::setBatchSize);
 
         dedupeThreadCountSpinner.setValueFactory(intFactory(1, 32, config.getDuplicateDetectionThreadCount()));
         onIntChange(dedupeThreadCountSpinner, aiSettingsService::setDuplicateDetectionThreadCount);
 
-        faceOnlyCheckBox.setSelected(config.isFaceOnly());
+        faceOnlyCheckBox.setSelected(config.isAiPipelineFaceOnly());
         faceOnlyCheckBox.selectedProperty()
                         .addListener((obs, was, isNow) -> {
                             if (!initializing) {
@@ -127,24 +126,29 @@ public class SettingsController implements Initializable {
                         });
 
         // Album tuning
-        eventGapHoursSpinner.setValueFactory(intFactory(1, 168, config.getEventGapHours()));
-        onIntChange(eventGapHoursSpinner, aiSettingsService::setEventGapHours);
+        eventGapSpinner.setDuration(config.getAlbumEventsGap());
+        eventGapSpinner.durationProperty()
+                       .addListener((obs, was, isNow) -> {
+                           if (!initializing && isNow != null) {
+                               aiSettingsService.setEventGapHours(isNow);
+                           }
+                       });
 
-        minEventSizeSpinner.setValueFactory(intFactory(1, 200, config.getMinEventSize()));
-        onIntChange(minEventSizeSpinner, aiSettingsService::setMinEventSize);
+        minEventSizeSpinner.setValueFactory(intFactory(1, 200, config.getAlbumEventsMinPhotos()));
+        onIntChange(minEventSizeSpinner, aiSettingsService::setAlbumEventMinPhotos);
 
-        minLocationSizeSpinner.setValueFactory(intFactory(1, 200, config.getMinLocationSize()));
-        onIntChange(minLocationSizeSpinner, aiSettingsService::setMinLocationSize);
+        minLocationSizeSpinner.setValueFactory(intFactory(1, 200, config.getAlbumLocationsMinCellSize()));
+        onIntChange(minLocationSizeSpinner, aiSettingsService::setAlbumLocationsMinCellSize);
 
-        minClusterSizeSpinner.setValueFactory(intFactory(1, 500, config.getMinClusterSize()));
-        onIntChange(minClusterSizeSpinner, aiSettingsService::setMinClusterSize);
+        minClusterSizeSpinner.setValueFactory(intFactory(1, 500, config.getAlbumSimilaritiesMinClusterSize()));
+        onIntChange(minClusterSizeSpinner, aiSettingsService::setAlbumSimilaritiesMinClusterSize);
 
         minClusterSimilaritySpinner.setValueFactory(
-                new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 1.0, config.getMinClusterSimilarity(), 0.05));
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 1.0, config.getAlbumSimilaritiesMinSimilarity(), 0.05));
         minClusterSimilaritySpinner.valueProperty()
                                    .addListener((obs, was, isNow) -> {
                                        if (!initializing) {
-                                           aiSettingsService.setMinClusterSimilarity(isNow.floatValue());
+                                           aiSettingsService.setAlbumSimilaritiesMinSimilarity(isNow.floatValue());
                                        }
                                    });
 
@@ -152,8 +156,13 @@ public class SettingsController implements Initializable {
         videoFrameSampleCountSpinner.setValueFactory(intFactory(1, 20, config.getVideoFrameSampleCount()));
         onIntChange(videoFrameSampleCountSpinner, aiSettingsService::setVideoFrameSampleCount);
 
-        videoFrameSampleIntervalSpinner.setValueFactory(intFactory(1, 300, config.getVideoFrameSampleIntervalSeconds()));
-        onIntChange(videoFrameSampleIntervalSpinner, aiSettingsService::setVideoFrameSampleIntervalSeconds);
+        videoFrameSampleIntervalSpinner.setDuration(config.getVideoFrameSampleInterval());
+        videoFrameSampleIntervalSpinner.durationProperty()
+                                       .addListener((obs, was, isNow) -> {
+                                           if (!initializing && isNow != null) {
+                                               aiSettingsService.setVideoFrameSampleInterval(isNow);
+                                           }
+                                       });
 
         // Storage (restart required)
         modelDirField.setText(config.getModelDir()
@@ -186,7 +195,7 @@ public class SettingsController implements Initializable {
         return new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, initial);
     }
 
-    private void onIntChange(Spinner<Integer> spinner, java.util.function.IntConsumer apply) {
+    private void onIntChange(Spinner<Integer> spinner, IntConsumer apply) {
         spinner.valueProperty()
                .addListener((obs, was, isNow) -> {
                    if (!initializing && isNow != null) {

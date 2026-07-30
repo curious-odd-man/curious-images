@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,16 +31,16 @@ public class VideoFrameSampler {
     /**
      * @param videoFile          absolute path to the video file
      * @param sampleCount        configured max number of frames to sample
-     * @param minIntervalSeconds configured minimum spacing between samples, in seconds
+     * @param minInterval configured minimum spacing between samples, in seconds
      * @return sampled frames in chronological order; empty if the video couldn't be opened at all
      * (never throws for one bad file — same contract as the rest of the video-decode pipeline)
      */
-    public List<SampledFrame> sample(Path videoFile, int sampleCount, int minIntervalSeconds) {
+    public List<SampledFrame> sample(Path videoFile, int sampleCount, Duration minInterval) {
         List<SampledFrame> result = new ArrayList<>();
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile.toString())) {
             grabber.start();
             long       durationMs = grabber.getLengthInTime() / 1000L; // JavaCV reports microseconds
-            List<Long> offsets    = computeOffsetsMs(durationMs, sampleCount, minIntervalSeconds * 1000L);
+            List<Long> offsets    = computeOffsetsMs(durationMs, sampleCount, minInterval.toMillis());
 
             try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
                 for (long offsetMs : offsets) {

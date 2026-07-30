@@ -2,6 +2,7 @@ package com.github.curiousoddman.curious_images.domain.scenegroup;
 
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -23,13 +24,13 @@ public class SceneCandidateMatcher {
      * they always end up as singletons rather than risk grouping-by-coincidence.
      */
     public boolean isCandidate(ScenePhotoDescriptor a, ScenePhotoDescriptor b,
-                               int timestampWindowSeconds, int geoRadiusMeters) {
+                               Duration timestampWindow, int geoRadiusMeters) {
         if (a.captureDate() == null || b.captureDate() == null) {
             return false;
         }
 
         long secondsApart = Math.abs(ChronoUnit.SECONDS.between(a.captureDate(), b.captureDate()));
-        if (secondsApart > timestampWindowSeconds) {
+        if (secondsApart > timestampWindow.toSeconds()) {
             return false;
         }
 

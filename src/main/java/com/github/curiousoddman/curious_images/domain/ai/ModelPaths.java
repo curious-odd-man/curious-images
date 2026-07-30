@@ -1,6 +1,7 @@
 package com.github.curiousoddman.curious_images.domain.ai;
 
 import com.github.curiousoddman.curious_images.config.AiConfig;
+import com.github.curiousoddman.curious_images.config.AiModelLink;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -54,7 +55,7 @@ public class ModelPaths {
      * exist under {@link AiConfig#getModelDir()}. Recomputed on every call — cheap (four
      * {@code Files.exists} checks) and avoids any stale-cache issues after a download completes.
      */
-    public List<AiConfig.ModelDownload> missingModels() {
+    public List<AiModelLink> missingModels() {
         return config.getModels()
                      .stream()
                      .filter(m -> !Files.exists(resolve(m.getFilename())))

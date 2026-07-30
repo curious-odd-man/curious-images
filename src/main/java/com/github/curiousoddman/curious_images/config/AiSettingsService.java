@@ -7,27 +7,12 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.stereotype.Service;
 
-/**
- * Single place the Settings screen talks to for every AI-related setting that can be changed
- * without restarting the app.
- * <p>
- * On startup, {@link #applyPersistedOverrides()} loads any previously-saved values from
- * {@link DataAccess} (the {@code USER_PREFERENCES} table) on top of the {@code application.yaml}
- * defaults already bound onto {@link AiConfig}. From then on, every setter here:
- * <ol>
- *     <li>updates the live {@link AiConfig} bean (read by {@code JobFactory}, {@code OnnxModelRegistry}
- *     and the album-generation jobs on their next run/call),</li>
- *     <li>persists the new value so it survives a restart, and</li>
- *     <li>for the two settings that affect an already-open ONNX session (execution provider,
- *     intra-op threads), evicts all cached sessions so the next inference call recreates them
- *     with the new options.</li>
- * </ol>
- * Settings that are read once while building beans that can't be safely re-created at runtime
- * (model directory, index root, thumbnail cache directory) are NOT handled here — see
- * {@link RuntimeSettingsBootstrap} for those.
- */
+import java.time.Duration;
+import java.util.function.Function;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -47,47 +32,41 @@ public class AiSettingsService {
 
     @PostConstruct
     public void applyPersistedOverrides() {
-        aiConfig.setExecutionProvider(
-                AiConfig.ExecutionProvider.valueOf(
-                        dataAccess.getUserPref(UserPrefKey.AI_EXECUTION_PROVIDER, aiConfig.getExecutionProvider()
+        aiConfig.setAiExecutionProvider(
+                AiExecutionProvider.valueOf(
+                        dataAccess.getUserPref(UserPrefKey.AI_EXECUTION_PROVIDER, aiConfig.getAiExecutionProvider()
                                                                                           .name())));
-        aiConfig.setIntraOpThreads(getInt(UserPrefKey.AI_INTRA_OP_THREADS, aiConfig.getIntraOpThreads()));
-        aiConfig.setBatchSize(getInt(UserPrefKey.AI_BATCH_SIZE, aiConfig.getBatchSize()));
+        aiConfig.setOnnxIntraOpThreads(getInt(UserPrefKey.AI_INTRA_OP_THREADS, aiConfig.getOnnxIntraOpThreads()));
         aiConfig.setDuplicateDetectionThreadCount(getInt(UserPrefKey.AI_DUPLICATE_DETECTION_THREAD_COUNT, yamlDuplicateDetectionThreadCount));
-        aiConfig.setFaceOnly(getBoolean(UserPrefKey.AI_FACE_ONLY, yamlFaceOnly));
-        aiConfig.setEventGapHours(getInt(UserPrefKey.AI_EVENT_GAP_HOURS, aiConfig.getEventGapHours()));
-        aiConfig.setMinEventSize(getInt(UserPrefKey.AI_MIN_EVENT_SIZE, aiConfig.getMinEventSize()));
-        aiConfig.setMinLocationSize(getInt(UserPrefKey.AI_MIN_LOCATION_SIZE, aiConfig.getMinLocationSize()));
-        aiConfig.setMinClusterSize(getInt(UserPrefKey.AI_MIN_CLUSTER_SIZE, aiConfig.getMinClusterSize()));
-        aiConfig.setMinClusterSimilarity(getFloat(UserPrefKey.AI_MIN_CLUSTER_SIMILARITY, aiConfig.getMinClusterSimilarity()));
+        aiConfig.setAiPipelineFaceOnly(getBoolean(UserPrefKey.AI_FACE_ONLY, yamlFaceOnly));
+        aiConfig.setAlbumEventsGap(getDuration(UserPrefKey.AI_EVENT_GAP, aiConfig.getAlbumEventsGap()));
+        aiConfig.setAlbumEventsMinPhotos(getInt(UserPrefKey.AI_MIN_EVENT_SIZE, aiConfig.getAlbumEventsMinPhotos()));
+        aiConfig.setAlbumLocationsMinCellSize(getInt(UserPrefKey.AI_MIN_LOCATION_SIZE, aiConfig.getAlbumLocationsMinCellSize()));
+        aiConfig.setAlbumSimilaritiesMinClusterSize(getInt(UserPrefKey.AI_MIN_CLUSTER_SIZE, aiConfig.getAlbumSimilaritiesMinClusterSize()));
+        aiConfig.setAlbumSimilaritiesMinSimilarity(getFloat(UserPrefKey.AI_MIN_CLUSTER_SIMILARITY, aiConfig.getAlbumSimilaritiesMinSimilarity()));
         aiConfig.setVideoFrameSampleCount(getInt(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_COUNT, aiConfig.getVideoFrameSampleCount()));
-        aiConfig.setVideoFrameSampleIntervalSeconds(getInt(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS, aiConfig.getVideoFrameSampleIntervalSeconds()));
-        log.info("Applied persisted AI settings: provider={}, intraOpThreads={}, batchSize={}, dedupeThreads={}, faceOnly={}",
-                aiConfig.getExecutionProvider(), aiConfig.getIntraOpThreads(), aiConfig.getBatchSize(),
-                aiConfig.getDuplicateDetectionThreadCount(), aiConfig.isFaceOnly());
+        aiConfig.setVideoFrameSampleInterval(getDuration(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL, aiConfig.getVideoFrameSampleInterval()));
+        log.info("Applied persisted AI settings: provider={}, intraOpThreads={}, dedupeThreads={}, faceOnly={}",
+                aiConfig.getAiExecutionProvider(), aiConfig.getOnnxIntraOpThreads(),
+                aiConfig.getDuplicateDetectionThreadCount(), aiConfig.isAiPipelineFaceOnly());
     }
 
     // ── Performance (require an ONNX session reload to take effect) ────────────
 
-    public void setExecutionProvider(AiConfig.ExecutionProvider provider) {
-        aiConfig.setExecutionProvider(provider);
+    public void setExecutionProvider(AiExecutionProvider provider) {
+        aiConfig.setAiExecutionProvider(provider);
         dataAccess.setUserPref(UserPrefKey.AI_EXECUTION_PROVIDER, provider.name());
         onnxModelRegistry.evictAll();
         log.info("Execution provider changed to {} - AI sessions will reload on next use", provider);
     }
 
     public void setIntraOpThreads(int threads) {
-        aiConfig.setIntraOpThreads(threads);
+        aiConfig.setOnnxIntraOpThreads(threads);
         dataAccess.setUserPref(UserPrefKey.AI_INTRA_OP_THREADS, String.valueOf(threads));
         onnxModelRegistry.evictAll();
     }
 
     // ── Performance (take effect on next call/job, no reload needed) ───────────
-
-    public void setBatchSize(int batchSize) {
-        aiConfig.setBatchSize(batchSize);
-        dataAccess.setUserPref(UserPrefKey.AI_BATCH_SIZE, String.valueOf(batchSize));
-    }
 
     public void setDuplicateDetectionThreadCount(int threadCount) {
         aiConfig.setDuplicateDetectionThreadCount(threadCount);
@@ -95,34 +74,34 @@ public class AiSettingsService {
     }
 
     public void setFaceOnly(boolean faceOnly) {
-        aiConfig.setFaceOnly(faceOnly);
+        aiConfig.setAiPipelineFaceOnly(faceOnly);
         dataAccess.setUserPref(UserPrefKey.AI_FACE_ONLY, String.valueOf(faceOnly));
     }
 
     // ── Album-generation tuning (take effect next time albums are (re)generated) ─
 
-    public void setEventGapHours(int hours) {
-        aiConfig.setEventGapHours(hours);
-        dataAccess.setUserPref(UserPrefKey.AI_EVENT_GAP_HOURS, String.valueOf(hours));
+    public void setEventGapHours(Duration duration) {
+        aiConfig.setAlbumEventsGap(duration);
+        dataAccess.setUserPref(UserPrefKey.AI_EVENT_GAP, DurationStyle.SIMPLE.print(duration));
     }
 
-    public void setMinEventSize(int size) {
-        aiConfig.setMinEventSize(size);
-        dataAccess.setUserPref(UserPrefKey.AI_MIN_EVENT_SIZE, String.valueOf(size));
+    public void setAlbumEventMinPhotos(int count) {
+        aiConfig.setAlbumEventsMinPhotos(count);
+        dataAccess.setUserPref(UserPrefKey.AI_MIN_EVENT_SIZE, String.valueOf(count));
     }
 
-    public void setMinLocationSize(int size) {
-        aiConfig.setMinLocationSize(size);
+    public void setAlbumLocationsMinCellSize(int size) {
+        aiConfig.setAlbumLocationsMinCellSize(size);
         dataAccess.setUserPref(UserPrefKey.AI_MIN_LOCATION_SIZE, String.valueOf(size));
     }
 
-    public void setMinClusterSize(int size) {
-        aiConfig.setMinClusterSize(size);
+    public void setAlbumSimilaritiesMinClusterSize(int size) {
+        aiConfig.setAlbumSimilaritiesMinClusterSize(size);
         dataAccess.setUserPref(UserPrefKey.AI_MIN_CLUSTER_SIZE, String.valueOf(size));
     }
 
-    public void setMinClusterSimilarity(float similarity) {
-        aiConfig.setMinClusterSimilarity(similarity);
+    public void setAlbumSimilaritiesMinSimilarity(float similarity) {
+        aiConfig.setAlbumSimilaritiesMinSimilarity(similarity);
         dataAccess.setUserPref(UserPrefKey.AI_MIN_CLUSTER_SIMILARITY, String.valueOf(similarity));
     }
 
@@ -133,9 +112,9 @@ public class AiSettingsService {
         dataAccess.setUserPref(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_COUNT, String.valueOf(count));
     }
 
-    public void setVideoFrameSampleIntervalSeconds(int seconds) {
-        aiConfig.setVideoFrameSampleIntervalSeconds(seconds);
-        dataAccess.setUserPref(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS, String.valueOf(seconds));
+    public void setVideoFrameSampleInterval(Duration duration) {
+        aiConfig.setVideoFrameSampleInterval(duration);
+        dataAccess.setUserPref(UserPrefKey.AI_VIDEO_FRAME_SAMPLE_INTERVAL, DurationStyle.SIMPLE.print(duration));
     }
 
     public AiConfig config() {
@@ -144,13 +123,12 @@ public class AiSettingsService {
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
+    private Duration getDuration(UserPrefKey key, Duration defaultValue) {
+        return tryParseOrDefault(DurationStyle::detectAndParse, defaultValue, key, DurationStyle.SIMPLE::print);
+    }
+
     private int getInt(UserPrefKey key, int defaultValue) {
-        try {
-            return Integer.parseInt(dataAccess.getUserPref(key, String.valueOf(defaultValue)));
-        } catch (NumberFormatException e) {
-            log.warn("Corrupt pref [{}], using default {}", key.getKey(), defaultValue);
-            return defaultValue;
-        }
+        return tryParseOrDefault(Integer::parseInt, defaultValue, key, String::valueOf);
     }
 
     private boolean getBoolean(UserPrefKey key, boolean defaultValue) {
@@ -158,10 +136,16 @@ public class AiSettingsService {
     }
 
     private float getFloat(UserPrefKey key, float defaultValue) {
+        return tryParseOrDefault(Float::parseFloat, defaultValue, key, String::valueOf);
+    }
+
+    private <T> T tryParseOrDefault(Function<String, T> callable, T defaultValue, UserPrefKey key, Function<T, String> toString) {
+        String defaultString = toString.apply(defaultValue);
         try {
-            return Float.parseFloat(dataAccess.getUserPref(key, String.valueOf(defaultValue)));
-        } catch (NumberFormatException e) {
-            log.warn("Corrupt pref [{}], using default {}", key.getKey(), defaultValue);
+            String value = dataAccess.getUserPref(key, defaultString);
+            return callable.apply(value);
+        } catch (Exception e) {
+            log.warn("Corrupt pref [{}], using default {}", key.getKey(), defaultString);
             return defaultValue;
         }
     }

@@ -32,6 +32,7 @@ import org.jooq.DSLContext;
 import org.opencv.core.Mat;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -74,7 +75,7 @@ public class AiPipelineJob extends BackgroundJob {
     private final VideoFrameSampler        videoFrameSampler;
     private final boolean                  faceDetectionOnly;
     private final int                      videoFrameSampleCount;
-    private final int                      videoFrameSampleIntervalSeconds;
+    private final Duration                 videoFrameSampleInterval;
     private final ClipTextEncoder          clipTextEncoder;
     private final PhotoTagRepository       tagRepository;
 
@@ -321,7 +322,7 @@ public class AiPipelineJob extends BackgroundJob {
     private List<Frame> loadFrames(Media media) {
         if (media.isVideo()) {
             List<VideoFrameSampler.SampledFrame> sampled = videoFrameSampler.sample(
-                    Path.of(media.getAbsolutePath()), videoFrameSampleCount, videoFrameSampleIntervalSeconds);
+                    Path.of(media.getAbsolutePath()), videoFrameSampleCount, videoFrameSampleInterval);
             List<Frame> frames = new ArrayList<>(sampled.size());
             for (VideoFrameSampler.SampledFrame sample : sampled) {
                 frames.add(new Frame(sample.offsetMs(), ImageUtils.toMat(sample.image())));

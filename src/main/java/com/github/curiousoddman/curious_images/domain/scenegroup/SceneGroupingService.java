@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,12 +43,12 @@ import java.util.Optional;
 public class SceneGroupingService {
 
     private final CustomAlbumPhotoRepository customAlbumPhotoRepository;
-    private final SceneGroupRepository        sceneGroupRepository;
-    private final MediaRepository             mediaRepository;
-    private final ThumbnailRepository         thumbnailRepository;
-    private final PerceptualHasher            perceptualHasher;
-    private final SceneCandidateMatcher       sceneCandidateMatcher;
-    private final AiConfig                    aiConfig;
+    private final SceneGroupRepository       sceneGroupRepository;
+    private final MediaRepository            mediaRepository;
+    private final ThumbnailRepository        thumbnailRepository;
+    private final PerceptualHasher           perceptualHasher;
+    private final SceneCandidateMatcher      sceneCandidateMatcher;
+    private final AiConfig                   aiConfig;
 
     /**
      * @return how many photos were newly assigned a scene group, for job progress reporting.
@@ -56,20 +57,20 @@ public class SceneGroupingService {
         List<CustomAlbumPhotoRecord> all = customAlbumPhotoRepository.findByAlbumId(customAlbumId);
 
         List<CustomAlbumPhotoRecord> ungrouped = all.stream()
-                                                     .filter(r -> r.getSceneGroupId() == null)
-                                                     .sorted(Comparator.comparing(CustomAlbumPhotoRecord::getAddedAt))
-                                                     .toList();
+                                                    .filter(r -> r.getSceneGroupId() == null)
+                                                    .sorted(Comparator.comparing(CustomAlbumPhotoRecord::getAddedAt))
+                                                    .toList();
         if (ungrouped.isEmpty()) {
             return 0;
         }
 
         List<Long> photoIds = all.stream()
-                                  .map(CustomAlbumPhotoRecord::getPhotoId)
-                                  .toList();
+                                 .map(CustomAlbumPhotoRecord::getPhotoId)
+                                 .toList();
         Map<Long, MediaPhotoRecord> mediaById = mediaRepository.findByIdIn(photoIds)
-                                                                .stream()
-                                                                .collect(java.util.stream.Collectors.toMap(
-                                                                        MediaPhotoRecord::getId, m -> m));
+                                                               .stream()
+                                                               .collect(java.util.stream.Collectors.toMap(
+                                                                       MediaPhotoRecord::getId, m -> m));
         Map<Long, ThumbnailRecord> thumbnailsById = thumbnailRepository.findByPhotoIds(photoIds);
         Map<Long, Long>            hashCache      = new HashMap<>();
 
@@ -82,9 +83,9 @@ public class SceneGroupingService {
             }
         }
 
-        int timestampWindowSeconds = aiConfig.getSceneGroupTimestampWindowSeconds();
-        int geoRadiusMeters        = aiConfig.getSceneGroupGeoRadiusMeters();
-        int hashDistanceThreshold  = aiConfig.getSceneGroupHashDistanceThreshold();
+        Duration timestampWindowSeconds = aiConfig.getSceneGroupTimestampWindow();
+        int      geoRadiusMeters        = aiConfig.getSceneGroupGeoRadiusMeters();
+        int      hashDistanceThreshold  = aiConfig.getSceneGroupHashDistanceThreshold();
 
         int assignedCount = 0;
         for (CustomAlbumPhotoRecord record : ungrouped) {

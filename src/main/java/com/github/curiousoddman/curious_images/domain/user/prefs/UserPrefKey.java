@@ -21,18 +21,17 @@ public enum UserPrefKey {
     // ── AI performance (live-appliable; see AiSettingsService) ─────────────────
     AI_EXECUTION_PROVIDER("ai.execution-provider"),
     AI_INTRA_OP_THREADS("ai.intra-op-threads"),
-    AI_BATCH_SIZE("ai.batch-size"),
     AI_DUPLICATE_DETECTION_THREAD_COUNT("ai.duplicate-detection.thread-count"),
     AI_FACE_ONLY("ai.features.face-only"),
 
     // ── Album-generation tuning (live-appliable) ────────────────────────────
-    AI_EVENT_GAP_HOURS("ai.album.event-gap-hours"),
+    AI_EVENT_GAP("ai.album.event-gap"),
     AI_MIN_EVENT_SIZE("ai.album.min-event-size"),
     AI_MIN_LOCATION_SIZE("ai.album.min-location-size"),
     AI_MIN_CLUSTER_SIZE("ai.album.min-cluster-size"),
     AI_MIN_CLUSTER_SIMILARITY("ai.album.min-cluster-similarity"),
     AI_VIDEO_FRAME_SAMPLE_COUNT("ai.video.frame-sample-count"),
-    AI_VIDEO_FRAME_SAMPLE_INTERVAL_SECONDS("ai.video.frame-sample-interval-seconds");
+    AI_VIDEO_FRAME_SAMPLE_INTERVAL("ai.video.frame-sample-interval");
 
     private final String key;
 }

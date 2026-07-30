@@ -1,15 +1,14 @@
 package com.github.curiousoddman.curious_images.config;
 
 import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nu.pattern.OpenCV;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -23,8 +22,6 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "app.ai")
 public class AiConfig {
-    // FIXME: all config values with time should properly be Duration class
-
     @PostConstruct
     public void initOpenCv() {
         OpenCV.loadLocally(); // org.openpnp packages this helper; call once at startup
@@ -33,12 +30,12 @@ public class AiConfig {
     /**
      * Which ONNX execution provider to use. GPU implies CUDA first, then DirectML fallback.
      */
-    private ExecutionProvider executionProvider = ExecutionProvider.CPU;
+    private AiExecutionProvider aiExecutionProvider = AiExecutionProvider.CPU;
 
     /**
      * Number of threads used inside a single ONNX op (intra-op parallelism).
      */
-    private int intraOpThreads = 4;
+    private int onnxIntraOpThreads = 4;
 
     /**
      * Directory where ONNX model files are stored at runtime. Models are downloaded into this
@@ -53,54 +50,49 @@ public class AiConfig {
      * {@code application.yaml}; defaults below mirror what used to be baked into the
      * {@code downloadModels} Gradle task.
      */
-    private List<ModelDownload> models = List.of(
-            new ModelDownload(
+    private List<AiModelLink> models = List.of(
+            new AiModelLink(
                     "retinaface-resnet50.onnx",
                     "https://huggingface.co/TheEeeeLin/HivisionIDPhotos_matting/resolve/main/retinaface-resnet50.onnx"
             ),
-            new ModelDownload(
+            new AiModelLink(
                     "arcface_r50.onnx",
                     "https://huggingface.co/public-data/insightface/resolve/main/models/buffalo_l/w600k_r50.onnx"
             ),
-            new ModelDownload(
+            new AiModelLink(
                     "clip_image_vit_b32.onnx",
                     "https://huggingface.co/immich-app/ViT-B-32__openai/resolve/main/visual/model.onnx"
             ),
-            new ModelDownload(
+            new AiModelLink(
                     "clip_text_vit_b32.onnx",
                     "https://huggingface.co/immich-app/ViT-B-32__openai/resolve/main/textual/model.onnx"
             )
     );
 
     /**
-     * Number of images processed per ONNX inference call. Tune up for GPU, down if RAM-constrained.
-     */
-    private int batchSize = 8;
-
-    /**
      * Gap in hours between photos that starts a new event album.
      */
-    private int eventGapHours = 6;
+    private Duration albumEventsGap = Duration.ofHours(6);
 
     /**
      * Minimum photos in a time gap to create an event album.
      */
-    private int minEventSize = 5;
+    private int albumEventsMinPhotos = 5;
 
     /**
      * Minimum photos sharing a GPS cell to create a location album.
      */
-    private int minLocationSize = 3;
+    private int albumLocationsMinCellSize = 3;
 
     /**
      * Minimum photos in a visual-similarity cluster to create a similarity album.
      */
-    private int minClusterSize = 10;
+    private int albumSimilaritiesMinClusterSize = 10;
 
     /**
      * Minimum intra-cluster average cosine similarity to accept a similarity album.
      */
-    private float minClusterSimilarity = 0.6f;
+    private float albumSimilaritiesMinSimilarity = 0.6f;
 
     /**
      * Thread-pool size for {@code DuplicateDetectionJob}'s hashing phase. Not bound directly from
@@ -114,12 +106,12 @@ public class AiConfig {
      * embedding generation. Seeded from {@code ai.features.face-only} at startup, then mutable
      * at runtime via {@code AiSettingsService}.
      */
-    private boolean faceOnly = false;
+    private boolean aiPipelineFaceOnly = false;
 
     /**
      * How many frames to sample per video for face/CLIP embedding (implementation plan §5).
      * Frames are spaced evenly across the 10%-90% span of the video's duration (e.g. count=3
-     * gives 10%/50%/90%), then capped by {@link #videoFrameSampleIntervalSeconds} so short videos
+     * gives 10%/50%/90%), then capped by {@link #videoFrameSampleInterval} so short videos
      * don't get needlessly close-together samples.
      */
     private int videoFrameSampleCount = 3;
@@ -130,7 +122,7 @@ public class AiConfig {
      * apart. E.g. a 4-second video with intervalSeconds=5 samples only 1 frame (the midpoint)
      * even if videoFrameSampleCount is 3.
      */
-    private int videoFrameSampleIntervalSeconds = 5;
+    private Duration videoFrameSampleInterval = Duration.ofSeconds(5);
 
     /**
      * Scene grouping (custom albums, album-refinement-feature-spec.md §4.1): two photos in the
@@ -139,11 +131,11 @@ public class AiConfig {
      * minutes comfortably covers a burst or a quick sequence of shots without being so wide it
      * starts pulling in unrelated photos from the same outing.
      */
-    private int sceneGroupTimestampWindowSeconds = 300;
+    private Duration sceneGroupTimestampWindow = Duration.ofSeconds(300);
 
     /**
      * Scene grouping: two photos are only candidates for the same scene group if their GPS
-     * coordinates (when both have one — see {@link #sceneGroupTimestampWindowSeconds}'s javadoc
+     * coordinates (when both have one — see {@link #sceneGroupTimestampWindow}'s javadoc
      * on the timestamp-only fallback) are within this many meters of each other.
      */
     private int sceneGroupGeoRadiusMeters = 50;
@@ -157,33 +149,4 @@ public class AiConfig {
      * strict/loose in practice.
      */
     private int sceneGroupHashDistanceThreshold = 10;
-
-    public enum ExecutionProvider {
-        /**
-         * Run on CPU only (ONNX Runtime default).
-         */
-        CPU,
-        /**
-         * NVIDIA CUDA GPU execution. Requires CUDA 12+ drivers.
-         */
-        CUDA,
-        /**
-         * DirectX 12 GPU execution (AMD / Intel / NVIDIA, no CUDA drivers needed).
-         */
-        DIRECTML
-    }
-
-    /**
-     * One downloadable model file: its filename under {@link #modelDir} and the URL to fetch it
-     * from. Plain mutable POJO (not a record) so Spring's relaxed {@code @ConfigurationProperties}
-     * binding can populate it from {@code application.yaml} if the defaults are overridden.
-     */
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ModelDownload {
-        private String filename;
-        private String url;
-    }
 }

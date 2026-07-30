@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.github.curiousoddman.curious_images.util.EmbeddingMath.dot;
 import static com.github.curiousoddman.curious_images.util.EmbeddingMath.getFloats;
@@ -104,7 +103,7 @@ public class AlbumGenerationJob extends BackgroundJob {
             return;
         }
 
-        long              gapMillis = TimeUnit.HOURS.toMillis(aiConfig.getEventGapHours());
+        long              gapMillis = aiConfig.getAlbumEventsGap().toMillis();
         List<List<Media>> events    = new ArrayList<>();
         List<Media>       current   = new ArrayList<>();
         current.add(dated.getFirst());
@@ -134,7 +133,7 @@ public class AlbumGenerationJob extends BackgroundJob {
                 publishProgressThrottled("Build Event Albums", j + dated.size(), dated.size() + events.size(), "", false);
 
                 List<Media> eventPhotos = events.get(j);
-                if (eventPhotos.size() < aiConfig.getMinEventSize()) {
+                if (eventPhotos.size() < aiConfig.getAlbumEventsMinPhotos()) {
                     continue;
                 }
 
@@ -187,7 +186,7 @@ public class AlbumGenerationJob extends BackgroundJob {
                 i++;
                 publishProgressThrottled("Build Event Albums", withGps.size() + i, withGps.size() + cells.size(), "", false);
                 List<Media> group = entry.getValue();
-                if (group.size() < aiConfig.getMinLocationSize()) {
+                if (group.size() < aiConfig.getAlbumLocationsMinCellSize()) {
                     continue;
                 }
 
@@ -252,7 +251,7 @@ public class AlbumGenerationJob extends BackgroundJob {
 
             for (Map.Entry<Integer, List<Integer>> entry : clusters.entrySet()) {
                 List<Integer> members = entry.getValue();
-                if (members.size() < aiConfig.getMinClusterSize()) {
+                if (members.size() < aiConfig.getAlbumSimilaritiesMinClusterSize()) {
                     continue;
                 }
 
@@ -265,7 +264,7 @@ public class AlbumGenerationJob extends BackgroundJob {
                     avgSim += dot(centroid, vectors[idx]);
                 }
                 avgSim /= members.size();
-                if (avgSim < aiConfig.getMinClusterSimilarity()) {
+                if (avgSim < aiConfig.getAlbumSimilaritiesMinSimilarity()) {
                     continue;
                 }
 
