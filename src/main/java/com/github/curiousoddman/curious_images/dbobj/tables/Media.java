@@ -10,6 +10,8 @@ import com.github.curiousoddman.curious_images.dbobj.Public;
 import com.github.curiousoddman.curious_images.dbobj.tables.Album.AlbumPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.AlbumMedia.AlbumMediaPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.ClipEmbedding.ClipEmbeddingPath;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbum.CustomAlbumPath;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbumPhoto.CustomAlbumPhotoPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroup.DuplicateGroupPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember.DuplicateGroupMemberPath;
 import com.github.curiousoddman.curious_images.dbobj.tables.Face.FacePath;
@@ -451,6 +453,32 @@ public class Media extends TableImpl<MediaRecord> {
             _duplicateGroupMember = new DuplicateGroupMemberPath(this, null, Keys.CONSTRAINT_BB01.getInverseKey());
 
         return _duplicateGroupMember;
+    }
+
+    private transient CustomAlbumPhotoPath _customAlbumPhoto;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.CUSTOM_ALBUM_PHOTO</code> table
+     */
+    public CustomAlbumPhotoPath customAlbumPhoto() {
+        if (_customAlbumPhoto == null)
+            _customAlbumPhoto = new CustomAlbumPhotoPath(this, null, Keys.CONSTRAINT_BFD.getInverseKey());
+
+        return _customAlbumPhoto;
+    }
+
+    private transient CustomAlbumPath _customAlbum;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.CUSTOM_ALBUM</code> table
+     */
+    public CustomAlbumPath customAlbum() {
+        if (_customAlbum == null)
+            _customAlbum = new CustomAlbumPath(this, null, Keys.CONSTRAINT_EB.getInverseKey());
+
+        return _customAlbum;
     }
 
     private transient ThumbnailPath _thumbnail;

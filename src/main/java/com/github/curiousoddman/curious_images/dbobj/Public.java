@@ -8,6 +8,8 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Album;
 import com.github.curiousoddman.curious_images.dbobj.tables.AlbumMedia;
 import com.github.curiousoddman.curious_images.dbobj.tables.ClipEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.Cluster;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbum;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbumPhoto;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateJob;
@@ -28,6 +30,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.PendingAction;
 import com.github.curiousoddman.curious_images.dbobj.tables.Person;
 import com.github.curiousoddman.curious_images.dbobj.tables.Photo;
 import com.github.curiousoddman.curious_images.dbobj.tables.PhotoPreview;
+import com.github.curiousoddman.curious_images.dbobj.tables.SceneGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.TagEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.Thumbnail;
 import com.github.curiousoddman.curious_images.dbobj.tables.UserPreferences;
@@ -83,6 +86,16 @@ public class Public extends SchemaImpl {
      * The table <code>public.CLUSTER</code>.
      */
     public final Cluster CLUSTER = Cluster.CLUSTER;
+
+    /**
+     * The table <code>public.CUSTOM_ALBUM</code>.
+     */
+    public final CustomAlbum CUSTOM_ALBUM = CustomAlbum.CUSTOM_ALBUM;
+
+    /**
+     * The table <code>public.CUSTOM_ALBUM_PHOTO</code>.
+     */
+    public final CustomAlbumPhoto CUSTOM_ALBUM_PHOTO = CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO;
 
     /**
      * The table <code>public.DUPLICATE_GROUP</code>.
@@ -185,6 +198,11 @@ public class Public extends SchemaImpl {
     public final PhotoPreview PHOTO_PREVIEW = PhotoPreview.PHOTO_PREVIEW;
 
     /**
+     * The table <code>public.SCENE_GROUP</code>.
+     */
+    public final SceneGroup SCENE_GROUP = SceneGroup.SCENE_GROUP;
+
+    /**
      * The table <code>public.TAG_EMBEDDING</code>.
      */
     public final TagEmbedding TAG_EMBEDDING = TagEmbedding.TAG_EMBEDDING;
@@ -224,6 +242,8 @@ public class Public extends SchemaImpl {
             AlbumMedia.ALBUM_MEDIA,
             ClipEmbedding.CLIP_EMBEDDING,
             Cluster.CLUSTER,
+            CustomAlbum.CUSTOM_ALBUM,
+            CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO,
             DuplicateGroup.DUPLICATE_GROUP,
             DuplicateGroupMember.DUPLICATE_GROUP_MEMBER,
             DuplicateJob.DUPLICATE_JOB,
@@ -244,6 +264,7 @@ public class Public extends SchemaImpl {
             Person.PERSON,
             Photo.PHOTO,
             PhotoPreview.PHOTO_PREVIEW,
+            SceneGroup.SCENE_GROUP,
             TagEmbedding.TAG_EMBEDDING,
             Thumbnail.THUMBNAIL,
             UserPreferences.USER_PREFERENCES,

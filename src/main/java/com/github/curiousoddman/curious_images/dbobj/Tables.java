@@ -8,6 +8,8 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Album;
 import com.github.curiousoddman.curious_images.dbobj.tables.AlbumMedia;
 import com.github.curiousoddman.curious_images.dbobj.tables.ClipEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.Cluster;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbum;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbumPhoto;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateJob;
@@ -28,6 +30,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.PendingAction;
 import com.github.curiousoddman.curious_images.dbobj.tables.Person;
 import com.github.curiousoddman.curious_images.dbobj.tables.Photo;
 import com.github.curiousoddman.curious_images.dbobj.tables.PhotoPreview;
+import com.github.curiousoddman.curious_images.dbobj.tables.SceneGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.TagEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.Thumbnail;
 import com.github.curiousoddman.curious_images.dbobj.tables.UserPreferences;
@@ -69,6 +72,16 @@ public class Tables {
      * The table <code>public.CLUSTER</code>.
      */
     public static final Cluster CLUSTER = Cluster.CLUSTER;
+
+    /**
+     * The table <code>public.CUSTOM_ALBUM</code>.
+     */
+    public static final CustomAlbum CUSTOM_ALBUM = CustomAlbum.CUSTOM_ALBUM;
+
+    /**
+     * The table <code>public.CUSTOM_ALBUM_PHOTO</code>.
+     */
+    public static final CustomAlbumPhoto CUSTOM_ALBUM_PHOTO = CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO;
 
     /**
      * The table <code>public.DUPLICATE_GROUP</code>.
@@ -169,6 +182,11 @@ public class Tables {
      * The table <code>public.PHOTO_PREVIEW</code>.
      */
     public static final PhotoPreview PHOTO_PREVIEW = PhotoPreview.PHOTO_PREVIEW;
+
+    /**
+     * The table <code>public.SCENE_GROUP</code>.
+     */
+    public static final SceneGroup SCENE_GROUP = SceneGroup.SCENE_GROUP;
 
     /**
      * The table <code>public.TAG_EMBEDDING</code>.

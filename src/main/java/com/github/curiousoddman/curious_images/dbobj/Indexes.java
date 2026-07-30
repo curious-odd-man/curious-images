@@ -8,6 +8,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Album;
 import com.github.curiousoddman.curious_images.dbobj.tables.AlbumMedia;
 import com.github.curiousoddman.curious_images.dbobj.tables.ClipEmbedding;
 import com.github.curiousoddman.curious_images.dbobj.tables.Cluster;
+import com.github.curiousoddman.curious_images.dbobj.tables.CustomAlbumPhoto;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroup;
 import com.github.curiousoddman.curious_images.dbobj.tables.DuplicateGroupMember;
 import com.github.curiousoddman.curious_images.dbobj.tables.Face;
@@ -16,6 +17,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
+import com.github.curiousoddman.curious_images.dbobj.tables.SceneGroup;
 
 import javax.annotation.processing.Generated;
 
@@ -49,6 +51,9 @@ public class Indexes {
     public static final Index IDX_ALBUM_TYPE = Internal.createIndex(DSL.name("IDX_ALBUM_TYPE"), Album.ALBUM, new OrderField[] { Album.ALBUM.TYPE }, false);
     public static final Index IDX_CLIP_EMBEDDING_MEDIA = Internal.createIndex(DSL.name("IDX_CLIP_EMBEDDING_MEDIA"), ClipEmbedding.CLIP_EMBEDDING, new OrderField[] { ClipEmbedding.CLIP_EMBEDDING.MEDIA_ID }, false);
     public static final Index IDX_CLUSTER_PERSON_ID = Internal.createIndex(DSL.name("IDX_CLUSTER_PERSON_ID"), Cluster.CLUSTER, new OrderField[] { Cluster.CLUSTER.PERSON_ID }, false);
+    public static final Index IDX_CUSTOM_ALBUM_PHOTO_ALBUM = Internal.createIndex(DSL.name("IDX_CUSTOM_ALBUM_PHOTO_ALBUM"), CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO, new OrderField[] { CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID }, false);
+    public static final Index IDX_CUSTOM_ALBUM_PHOTO_SCENE_GROUP = Internal.createIndex(DSL.name("IDX_CUSTOM_ALBUM_PHOTO_SCENE_GROUP"), CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO, new OrderField[] { CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID }, false);
+    public static final Index IDX_CUSTOM_ALBUM_PHOTO_STATE = Internal.createIndex(DSL.name("IDX_CUSTOM_ALBUM_PHOTO_STATE"), CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO, new OrderField[] { CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID, CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO.STATE }, false);
     public static final Index IDX_DUPLICATE_GROUP_JOB = Internal.createIndex(DSL.name("IDX_DUPLICATE_GROUP_JOB"), DuplicateGroup.DUPLICATE_GROUP, new OrderField[] { DuplicateGroup.DUPLICATE_GROUP.DUPLICATE_JOB_ID }, false);
     public static final Index IDX_DUPLICATE_GROUP_MEMBER_GROUP = Internal.createIndex(DSL.name("IDX_DUPLICATE_GROUP_MEMBER_GROUP"), DuplicateGroupMember.DUPLICATE_GROUP_MEMBER, new OrderField[] { DuplicateGroupMember.DUPLICATE_GROUP_MEMBER.DUPLICATE_GROUP_ID }, false);
     public static final Index IDX_DUPLICATE_GROUP_MEMBER_MEDIA = Internal.createIndex(DSL.name("IDX_DUPLICATE_GROUP_MEMBER_MEDIA"), DuplicateGroupMember.DUPLICATE_GROUP_MEMBER, new OrderField[] { DuplicateGroupMember.DUPLICATE_GROUP_MEMBER.MEDIA_ID }, false);
@@ -60,4 +65,5 @@ public class Indexes {
     public static final Index IDX_MEDIA_HASH_CONTENT_HASH = Internal.createIndex(DSL.name("IDX_MEDIA_HASH_CONTENT_HASH"), MediaHash.MEDIA_HASH, new OrderField[] { MediaHash.MEDIA_HASH.CONTENT_HASH }, false);
     public static final Index IDX_MEDIA_METADATA_EDIT_MEDIA_FIELD = Internal.createIndex(DSL.name("IDX_MEDIA_METADATA_EDIT_MEDIA_FIELD"), MediaMetadataEdit.MEDIA_METADATA_EDIT, new OrderField[] { MediaMetadataEdit.MEDIA_METADATA_EDIT.MEDIA_ID, MediaMetadataEdit.MEDIA_METADATA_EDIT.FIELD_NAME }, false);
     public static final Index IDX_MEDIA_TYPE = Internal.createIndex(DSL.name("IDX_MEDIA_TYPE"), Media.MEDIA, new OrderField[] { Media.MEDIA.MEDIA_TYPE }, false);
+    public static final Index IDX_SCENE_GROUP_ALBUM = Internal.createIndex(DSL.name("IDX_SCENE_GROUP_ALBUM"), SceneGroup.SCENE_GROUP, new OrderField[] { SceneGroup.SCENE_GROUP.CUSTOM_ALBUM_ID }, false);
 }
