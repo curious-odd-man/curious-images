@@ -43,6 +43,19 @@ public class CustomAlbumPhotoRepository {
                   .set(CUSTOM_ALBUM_PHOTO.ADDED_AT, now);
     }
 
+    /**
+     * Distinct custom album ids that currently have at least one not-yet-clustered photo.
+     * Drives {@code SceneGroupingJob}'s global sweep — it processes one album's worth of
+     * ungrouped photos at a time via {@code SceneGroupingService#processAlbum}, in this order.
+     */
+    public List<Long> findAlbumIdsWithoutSceneGroup() {
+        return dsl.selectDistinct(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID)
+                  .from(CUSTOM_ALBUM_PHOTO)
+                  .where(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID.isNull())
+                  .orderBy(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID)
+                  .fetch(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID);
+    }
+
     public List<CustomAlbumPhotoRecord> findByAlbumId(long albumId) {
         return dsl.selectFrom(CUSTOM_ALBUM_PHOTO)
                   .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))

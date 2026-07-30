@@ -236,6 +236,15 @@ public class JobManager {
     }
 
     /**
+     * Requests a scene-grouping sweep — submitted after photos are added to any custom album
+     * (see {@code CustomAlbumPhotoAdditionService}). Supersedable: see
+     * {@code SceneGroupingJob#isSupersedable()}.
+     */
+    public Optional<JobDescriptor> submitSceneGroupingJob() {
+        return submit(jobFactory.createSceneGroupingJob());
+    }
+
+    /**
      * Submits a download of whatever AI models are currently missing (see
      * {@code ModelPaths#missingModels()}). Like other non-supersedable jobs, a second submission
      * while one is already queued/running is silently discarded — the in-flight download will

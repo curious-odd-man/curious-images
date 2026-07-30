@@ -23,6 +23,7 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "app.ai")
 public class AiConfig {
+    // FIXME: all config values with time should properly be Duration class
 
     @PostConstruct
     public void initOpenCv() {
@@ -130,6 +131,32 @@ public class AiConfig {
      * even if videoFrameSampleCount is 3.
      */
     private int videoFrameSampleIntervalSeconds = 5;
+
+    /**
+     * Scene grouping (custom albums, album-refinement-feature-spec.md §4.1): two photos in the
+     * same custom album are only considered *candidates* for the same scene group if their
+     * {@code capture_date}s are within this many seconds of each other. TBD-tuned default — 5
+     * minutes comfortably covers a burst or a quick sequence of shots without being so wide it
+     * starts pulling in unrelated photos from the same outing.
+     */
+    private int sceneGroupTimestampWindowSeconds = 300;
+
+    /**
+     * Scene grouping: two photos are only candidates for the same scene group if their GPS
+     * coordinates (when both have one — see {@link #sceneGroupTimestampWindowSeconds}'s javadoc
+     * on the timestamp-only fallback) are within this many meters of each other.
+     */
+    private int sceneGroupGeoRadiusMeters = 50;
+
+    /**
+     * Scene grouping: maximum perceptual-hash (dHash) Hamming distance, out of a 64-bit hash, for
+     * two candidate photos to be confirmed as the same scene (spec §4.2). Lower = stricter
+     * (near-identical only); higher = looser (catches more visually-similar-but-not-identical
+     * shots at the risk of false-grouping). 10/64 is a common "very similar" cutoff for this hash
+     * size — tune via {@code app.ai.scene-group-hash-distance-threshold} if it proves too
+     * strict/loose in practice.
+     */
+    private int sceneGroupHashDistanceThreshold = 10;
 
     public enum ExecutionProvider {
         /**

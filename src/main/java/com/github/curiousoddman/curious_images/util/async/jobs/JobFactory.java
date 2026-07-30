@@ -26,11 +26,14 @@ import com.github.curiousoddman.curious_images.domain.imports.metadata.StatsSess
 import com.github.curiousoddman.curious_images.domain.imports.metadata.VideoMetadataExtractor;
 import com.github.curiousoddman.curious_images.domain.index.ClipVectorIndex;
 import com.github.curiousoddman.curious_images.domain.index.FaceVectorIndex;
+import com.github.curiousoddman.curious_images.domain.scenegroup.SceneGroupingJob;
+import com.github.curiousoddman.curious_images.domain.scenegroup.SceneGroupingService;
 import com.github.curiousoddman.curious_images.model.AddFilesRequest;
 import com.github.curiousoddman.curious_images.persistence.AlbumPhotoRepository;
 import com.github.curiousoddman.curious_images.persistence.AlbumRepository;
 import com.github.curiousoddman.curious_images.persistence.ClipEmbeddingRepository;
 import com.github.curiousoddman.curious_images.persistence.ClusterRepository;
+import com.github.curiousoddman.curious_images.persistence.CustomAlbumPhotoRepository;
 import com.github.curiousoddman.curious_images.persistence.DuplicateGroupRepository;
 import com.github.curiousoddman.curious_images.persistence.DuplicateJobRepository;
 import com.github.curiousoddman.curious_images.persistence.FaceEmbeddingRepository;
@@ -94,6 +97,8 @@ public class JobFactory {
     private final PhotoTagRepository          photoTagRepository;
     private final StatsSessionFactory         statsSessionFactory;
     private final MediaMetadataEditRepository mediaMetadataEditRepository;
+    private final CustomAlbumPhotoRepository  customAlbumPhotoRepository;
+    private final SceneGroupingService        sceneGroupingService;
 
     public ImportJob createImportJob(List<String> paths) {
         return new ImportJob(
@@ -189,6 +194,17 @@ public class JobFactory {
                 timeProvider,
                 personService,
                 mediaRepository
+        );
+    }
+
+    /**
+     * Global sweep — see {@link SceneGroupingJob} class javadoc for why this isn't parameterized
+     * to a single album.
+     */
+    public SceneGroupingJob createSceneGroupingJob() {
+        return new SceneGroupingJob(
+                customAlbumPhotoRepository,
+                sceneGroupingService
         );
     }
 
