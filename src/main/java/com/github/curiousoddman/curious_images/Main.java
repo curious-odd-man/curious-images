@@ -12,7 +12,6 @@ public class Main {
     // TODO: Selections/collections/albums whatever - integrate media-shoot-magic here
     // TODO: AI models eviction - no need to store those in memory all the time.
     // TODO: Remove all hardcoded styles --> use classes instead, then update all themes accordingly.
-    // FIXME: I believe that prototype scope controllers are never removed from the context - leading to a memory leak. Investigate how to address this
     public static void main(String[] args) {
         LauncherImpl.launchApplication(JavafxApplication.class, AnimatedPreloader.class, args);
     }
