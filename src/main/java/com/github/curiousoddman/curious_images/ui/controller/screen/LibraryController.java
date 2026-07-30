@@ -127,6 +127,8 @@ public class LibraryController implements Initializable {
     @FXML
     public AnchorPane                personDetailContainer;
     @FXML
+    public AnchorPane                customAlbumContainer;
+    @FXML
     public AnchorPane                duplicatesContainer;
     @FXML
     public AnchorPane                folderDuplicatesContainer;
@@ -154,6 +156,7 @@ public class LibraryController implements Initializable {
     public Button                    themePickerButton;
 
     private PersonDetailController personDetailController;
+    private CustomAlbumController  customAlbumController;
     private GridController         gridController;
     private RightPanelController   rightPanelController;
     private ThemePickerButton      themePickerButtonWrapper;
@@ -201,7 +204,8 @@ public class LibraryController implements Initializable {
                 new UiElement<>(duplicatesContainer, duplicatesLoaded.controller()),
                 new UiElement<>(folderDuplicatesContainer, folderDuplicatesLoaded.controller()),
                 new UiElement<>(personDetailContainer, personDetailController),
-                new UiElement<>(importStatsContainer, importStatsLoaded.controller())
+                new UiElement<>(importStatsContainer, importStatsLoaded.controller()),
+                new UiElement<>(customAlbumContainer, customAlbumController)
         );
 
         themePickerButtonWrapper = new ThemePickerButton(themePickerButton);
@@ -329,14 +333,8 @@ public class LibraryController implements Initializable {
             }
             case PersonPayload pp ->
                     personDetailController = libraryViewManager.showPersonDetail(pp.personId(), new UiElement<>(personDetailContainer, personDetailController), new GridCellResources(this::onShowRightPanel));
-            case NodePayload.CustomAlbumPayload cap -> {
-                // TODO(Phase 5): wire to the custom-album panel (refined/unrefined toggle +
-                // triage entry point) via LibraryViewManager.showCustomAlbum(cap.customAlbumId()).
-                // Until that lands, fall back to a clear/empty grid rather than leaving whatever
-                // was previously selected showing.
-                libraryViewManager.showPhotoGrid();
-                photoGridManager.clear();
-            }
+            case NodePayload.CustomAlbumPayload cap ->
+                    customAlbumController = libraryViewManager.showCustomAlbum(cap.customAlbumId(), new UiElement<>(customAlbumContainer, customAlbumController), new GridCellResources(this::onShowRightPanel));
         }
     }
 

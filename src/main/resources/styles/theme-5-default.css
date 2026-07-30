@@ -335,3 +335,15 @@ FontIcon {
 .list-cell:filled:selected:focused {
     -fx-background-color: transparent;
 }
+
+/* ---- Custom-album Refined/Unrefined toggle bar (CustomAlbumController) ----
+   Scoped under .album-view-toggle-bar so this doesn't affect ToggleButtons
+   elsewhere in the app. TODO: mirror this block in the other 4 theme-*.css
+   files — only the default theme has it so far. */
+.album-view-toggle-bar .toggle-button {
+    -fx-background-radius: 4;
+}
+.album-view-toggle-bar .toggle-button:selected {
+    -fx-background-color: #2f7dd1;
+    -fx-text-fill: white;
+}

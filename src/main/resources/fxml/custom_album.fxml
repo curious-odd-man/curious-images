@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+    Custom-album panel (album-refinement-feature-spec.md §7). Injected at runtime into
+    LibraryController's contentStack via LibraryViewManager.showCustomAlbum, same pattern as
+    person_detail.fxml.
+
+    Deliberately ONE embedded photo_grid.fxml, re-populated with a different photo set when the
+    Refined/Unrefined toggle changes, rather than one grid per view (or, worse, one per scene
+    group). PersonDetailController already flags a FIXME that PhotoGridManager is a singleton
+    shared across every embedded GridController instance ("one manager cannot manage 2
+    controllers simultaneously") — adding N more instances here (one per scene group) would make
+    that existing, already-acknowledged problem worse, not better. See the implementation plan
+    for how scene-group sectioning + per-tile state coloring (both deferred out of this shell)
+    are planned to avoid it: bespoke lightweight tiles, not more embedded GridControllers.
+-->
+<BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.github.curiousoddman.curious_images.ui.controller.screen.CustomAlbumController">
+
+    <fx:define>
+        <ToggleGroup fx:id="viewToggleGroup"/>
+    </fx:define>
+
+    <top>
+        <VBox BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <padding>
+                    <Insets bottom="8.0" left="12.0" right="12.0" top="8.0"/>
+                </padding>
+
+                <Label fx:id="albumNameLabel" styleClass="bold-label" text="Album"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <HBox styleClass="album-view-toggle-bar">
+                    <ToggleButton fx:id="unrefinedToggle" mnemonicParsing="false" onAction="#onShowUnrefined"
+                                  selected="true" text="Unrefined" toggleGroup="$viewToggleGroup"/>
+                    <ToggleButton fx:id="refinedToggle" mnemonicParsing="false" onAction="#onShowRefined"
+                                  text="Refined" toggleGroup="$viewToggleGroup"/>
+                </HBox>
+            </HBox>
+            <Label fx:id="lockedHintLabel" managed="false" style="-fx-font-size: 11px; -fx-opacity: 0.7;"
+                   text="Refined view is locked until at least one photo is marked Yes." visible="false">
+                <padding>
+                    <Insets bottom="4.0" left="12.0" right="12.0"/>
+                </padding>
+            </Label>
+        </VBox>
+    </top>
+
+    <center>
+        <BorderPane fx:id="gridBorderPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+                    BorderPane.alignment="CENTER"/>
+    </center>
+
+</BorderPane>

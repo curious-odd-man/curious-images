@@ -6,6 +6,7 @@ import com.github.curiousoddman.curious_images.model.bundle.GridCellResources;
 import com.github.curiousoddman.curious_images.ui.FxmlLoader;
 import com.github.curiousoddman.curious_images.ui.FxmlView;
 import com.github.curiousoddman.curious_images.ui.controller.custom.GridController;
+import com.github.curiousoddman.curious_images.ui.controller.screen.CustomAlbumController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.DuplicatesController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.FolderDuplicatesController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.ImportStatsController;
@@ -30,28 +31,34 @@ public class LibraryViewManager {
 
     private final List<UiElement<?>> uiElements = new ArrayList<>();
 
-    private UiElement<GridController>       photoGrid;
-    private UiElement<DuplicatesController> duplicates;
+    private UiElement<GridController>             photoGrid;
+    private UiElement<DuplicatesController>       duplicates;
     private UiElement<FolderDuplicatesController> folderDuplicates;
     private UiElement<PersonDetailController>     personDetails;
     private UiElement<ImportStatsController>      importStats;
+    private UiElement<CustomAlbumController>      customAlbum;
+    private int                                   customAlbumIndex;
 
     public void initialize(UiElement<GridController> photoGridView,
                            UiElement<DuplicatesController> duplicatesContainer,
                            UiElement<FolderDuplicatesController> folderDuplicatesContainer,
                            UiElement<PersonDetailController> personDetailContainer,
-                           UiElement<ImportStatsController> importStatsContainer) {
+                           UiElement<ImportStatsController> importStatsContainer,
+                           UiElement<CustomAlbumController> customAlbumContainer) {
         this.photoGrid = photoGridView;
         this.duplicates = duplicatesContainer;
         this.folderDuplicates = folderDuplicatesContainer;
         this.personDetails = personDetailContainer;
         this.importStats = importStatsContainer;
+        this.customAlbum = customAlbumContainer;
 
         uiElements.add(photoGridView);
         uiElements.add(personDetailContainer);
         uiElements.add(duplicatesContainer);
         uiElements.add(folderDuplicatesContainer);
         uiElements.add(importStatsContainer);
+        customAlbumIndex = uiElements.size();
+        uiElements.add(customAlbumContainer);
     }
 
     public PersonDetailController showPersonDetail(long personId, UiElement<PersonDetailController> personDetailsElement, GridCellResources gridCellResources) {
@@ -77,6 +84,26 @@ public class LibraryViewManager {
 
     public void showPhotoGrid() {
         show(photoGrid);
+    }
+
+    public CustomAlbumController showCustomAlbum(long customAlbumId, UiElement<CustomAlbumController> customAlbumElement, GridCellResources gridCellResources) {
+        CustomAlbumController controller = customAlbumElement.controller();
+        if (controller == null) {
+            controller = fxmlLoader.loadFxmlAndAttachToParent(customAlbum.pane(), FxmlView.CUSTOM_ALBUM, gridCellResources)
+                                   .controller();
+
+            if (uiElements.get(customAlbumIndex)
+                          .controller() != null) {
+                throw new IllegalStateException("oops, something went wrong");
+            }
+            UiElement<CustomAlbumController> element = new UiElement<>(customAlbumElement.pane(), controller);
+            customAlbumElement = element;
+            uiElements.set(customAlbumIndex, element);
+        }
+
+        show(customAlbumElement);
+        controller.loadAlbum(customAlbumId);
+        return controller;
     }
 
     public void showDuplicatesView() {

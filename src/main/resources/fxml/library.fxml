@@ -56,6 +56,10 @@
                             <!-- ── Person detail panel (injected at runtime) ── -->
                             <AnchorPane fx:id="personDetailContainer" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />
 
+                            <!-- ── Custom-album panel (Refined/Unrefined toggle; injected at
+                                 runtime from custom_album.fxml — album-refinement-feature-spec.md) ── -->
+                            <AnchorPane fx:id="customAlbumContainer" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />
+
                             <!-- ── Duplicates review panel (injected from duplicates.fxml at
                                  runtime in LibraryController#initialize) ── -->
                             <AnchorPane fx:id="duplicatesContainer" managed="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" visible="false" />

@@ -36,4 +36,8 @@ public class CssClasses {
     public static final String THEME_PICKER_SWATCH = "theme-picker-swatch";
     public static final String THEME_PICKER_CHECK  = "theme-picker-check";
     public static final String BOLD_LABEL          = "bold-label";
+
+    // Custom-album Refined/Unrefined toggle bar wrapper (CustomAlbumController) — see
+    // theme-5-default.css's ".album-view-toggle-bar" block; not yet mirrored in the other themes.
+    public static final String ALBUM_VIEW_TOGGLE_BAR = "album-view-toggle-bar";
 }
