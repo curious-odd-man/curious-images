@@ -2,8 +2,10 @@ package com.github.curiousoddman.curious_images.ui.util;
 
 import com.github.curiousoddman.curious_images.domain.common.MediaRotationService;
 import com.github.curiousoddman.curious_images.domain.common.MetadataEditService;
+import com.github.curiousoddman.curious_images.domain.customalbum.CustomAlbumPhotoAdditionService;
 import com.github.curiousoddman.curious_images.model.Media;
 import com.github.curiousoddman.curious_images.model.Rotate;
+import com.github.curiousoddman.curious_images.persistence.CustomAlbumRepository;
 import com.github.curiousoddman.curious_images.util.ExplorerUtils;
 import javafx.scene.Parent;
 import javafx.scene.control.ContextMenu;
@@ -15,20 +17,25 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import static com.github.curiousoddman.curious_images.util.async.ThreadUtils.runOnDaemonThread;
+import static com.sun.javafx.util.Utils.runOnFxThread;
 import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.ARROW_CLOCKWISE;
 import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.ARROW_COUNTERCLOCKWISE;
 import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.ARROW_REPEAT;
 import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.FOLDER_SYMLINK;
+import static org.kordamp.ikonli.bootstrapicons.BootstrapIcons.IMAGES;
 
 @Component
 @RequiredArgsConstructor
 public class GridContextMenu {
 
-    private final MediaRotationService photoRotationService;
-    private final MetadataEditService  metadataEditService;
+    private final MediaRotationService            photoRotationService;
+    private final MetadataEditService             metadataEditService;
+    private final CustomAlbumRepository           customAlbumRepository;
+    private final CustomAlbumPhotoAdditionService customAlbumPhotoAdditionService;
 
     public ContextMenu show(Media media, Parent parent, ContextMenuEvent e) {
         if (media == null) {
@@ -64,9 +71,15 @@ public class GridContextMenu {
         MenuItem reveal = new MenuItem("Reveal in Explorer", new FontIcon(FOLDER_SYMLINK));
         reveal.setOnAction(ev -> ExplorerUtils.revealInExplorer(media.getAbsolutePath()));
 
+        MenuItem addToAlbum = new MenuItem("Add to Album...", new FontIcon(IMAGES));
+        // Custom albums only ever hold photos (album-refinement-feature-spec.md) — videos never
+        // get this option rather than silently no-op-ing if clicked.
+        addToAlbum.setDisable(media.isVideo());
+        addToAlbum.setOnAction(ev -> promptAndAddToAlbum(parent, Set.of(media.getId())));
+
         contextMenu.getItems()
                    .addAll(rotateCw, rotateCcw, rotate180, setRotation, new SeparatorMenuItem(),
-                           setCaptureDate, new SeparatorMenuItem(), reveal);
+                           setCaptureDate, new SeparatorMenuItem(), reveal, addToAlbum);
         contextMenu.show(parent, e.getScreenX(), e.getScreenY());
         return contextMenu;
     }
@@ -82,7 +95,7 @@ public class GridContextMenu {
             return null;
         }
         ContextMenu contextMenu = new ContextMenu();
-        int count = mediaIds.size();
+        int         count       = mediaIds.size();
 
         MenuItem rotateCw = new MenuItem("Rotate 90° (" + count + " selected)", new FontIcon(ARROW_CLOCKWISE));
         rotateCw.setOnAction(ev -> runOnDaemonThread("BulkRotate",
@@ -112,12 +125,47 @@ public class GridContextMenu {
 
         contextMenu.getItems()
                    .addAll(rotateCw, rotateCcw, rotate180, setRotation, new SeparatorMenuItem(), setCaptureDate);
+
+        // Which ids are actually photos isn't known without a DB read, and doing that read here
+        // would block the FX thread while the menu opens. So this item is always enabled for a
+        // non-empty selection; CustomAlbumPhotoAdditionService does the photo/video filtering
+        // asynchronously and reports back via CustomAlbumVideosSkipped if anything was dropped.
+        MenuItem addToAlbum = new MenuItem("Add to Album... (" + count + " selected)", new FontIcon(IMAGES));
+        addToAlbum.setOnAction(ev -> promptAndAddToAlbum(parent, mediaIds));
+        contextMenu.getItems()
+                   .add(addToAlbum);
+
         contextMenu.show(parent, e.getScreenX(), e.getScreenY());
         return contextMenu;
     }
 
     private void rotateCurrentPhoto(Media media, Rotate deltaDegrees) {
         runOnDaemonThread("RotatePhoto", () -> photoRotationService.rotateAndClearAiResults(media.getId(), deltaDegrees));
+    }
+
+    /**
+     * Shared by {@link #show} and {@link #showBulk}: loads the existing custom albums (off the FX
+     * thread — this is a DB read triggered by a menu click, not menu construction), shows
+     * {@link AlbumPickerDialog} on the FX thread, then performs the actual add (existing album) or
+     * create-and-add (new album) back off the FX thread.
+     */
+    private void promptAndAddToAlbum(Parent parent, Set<Long> mediaIds) {
+        runOnDaemonThread("LoadCustomAlbumsForPicker", () -> {
+            List<AlbumPickerDialog.AlbumChoice> choices = customAlbumRepository.findAll()
+                                                                               .stream()
+                                                                               .map(a -> new AlbumPickerDialog.AlbumChoice(a.getId(), a.getName()))
+                                                                               .toList();
+            runOnFxThread(() -> AlbumPickerDialog.ask(parent.getScene()
+                                                            .getWindow(), choices)
+                                                 .ifPresent(result -> runOnDaemonThread("AddToAlbum", () -> {
+                                                     switch (result) {
+                                                         case AlbumPickerDialog.Result.Existing(long albumId) ->
+                                                                 customAlbumPhotoAdditionService.addPhotos(albumId, mediaIds);
+                                                         case AlbumPickerDialog.Result.New(String name) ->
+                                                                 customAlbumPhotoAdditionService.createAlbumAndAddPhotos(name, mediaIds);
+                                                     }
+                                                 })));
+        });
     }
 }
 
