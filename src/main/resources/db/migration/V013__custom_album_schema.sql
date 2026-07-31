@@ -49,7 +49,7 @@ CREATE TABLE custom_album_photo
 (
     custom_album_id BIGINT   NOT NULL REFERENCES custom_album (id) ON DELETE CASCADE,
     photo_id        BIGINT   NOT NULL REFERENCES media (id) ON DELETE CASCADE,
-    state           SMALLINT NOT NULL DEFAULT 0,
+    state           INT NOT NULL DEFAULT 0,
     scene_group_id  BIGINT REFERENCES scene_group (id) ON DELETE SET NULL,
     added_at        TIMESTAMP NOT NULL,
     PRIMARY KEY (custom_album_id, photo_id)

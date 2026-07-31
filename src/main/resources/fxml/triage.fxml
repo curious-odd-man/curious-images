@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+    Triage mode (album-refinement-feature-spec.md §5) — a focused, full-attention review flow for
+    working through Unassigned photos one scene group at a time. Opened as an APPLICATION_MODAL
+    Stage from CustomAlbumController (see PersonDetailController#onBrowseFaces for the same
+    load-FXML-into-a-new-Stage pattern this follows), rather than another contentStack layer —
+    triage is meant to be a distraction-free flow, not something you casually switch away from.
+
+    Tiles are dragged onto one of the four corner targets (top-left=RatherNo, bottom-left=No,
+    top-right=RatherYes, bottom-right=Yes per spec §5); the targets are only shown once a drag
+    starts (see TriageController). Digit-key shortcuts (1-4) are also supported as an alternative
+    to dragging — exact key bindings are still an open question per the implementation plan.
+-->
+<BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.github.curiousoddman.curious_images.ui.controller.screen.TriageController">
+
+    <top>
+        <VBox styleClass="shortcut-hint-bar" BorderPane.alignment="CENTER">
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <padding>
+                    <Insets bottom="8.0" left="16.0" right="16.0" top="8.0"/>
+                </padding>
+                <Label fx:id="headerTitleLabel" styleClass="triage-header-title" text="Triage"/>
+                <Label fx:id="progressLabel" styleClass="triage-progress-label" text=""/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="nextGroupButton" mnemonicParsing="false" onAction="#onNextGroup"
+                        text="Next Group" visible="false" managed="false"/>
+                <Button mnemonicParsing="false" onAction="#onClose" text="Close"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="shortcut-hint-bar">
+                <padding>
+                    <Insets bottom="6.0" left="16.0" right="16.0"/>
+                </padding>
+                <Label styleClass="shortcut-hint-text"
+                       text="Drag a photo to a corner, or use keys 1=Rather No  2=No  3=Rather Yes  4=Yes"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <StackPane BorderPane.alignment="CENTER">
+
+            <ScrollPane fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                <content>
+                    <FlowPane fx:id="tilesPane" hgap="10.0" vgap="10.0">
+                        <padding>
+                            <Insets bottom="16.0" left="16.0" right="16.0" top="16.0"/>
+                        </padding>
+                    </FlowPane>
+                </content>
+            </ScrollPane>
+
+            <!-- Drag targets — only made visible/managed while a tile drag is in progress
+                 (see TriageController#showDragTargets/hideDragTargets). -->
+            <GridPane fx:id="dragTargetsGrid" hgap="16.0" managed="false" mouseTransparent="false"
+                      pickOnBounds="false" vgap="16.0" visible="false">
+                <padding>
+                    <Insets bottom="24.0" left="24.0" right="24.0" top="24.0"/>
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50.0"/>
+                    <ColumnConstraints percentWidth="50.0"/>
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints percentHeight="50.0"/>
+                    <RowConstraints percentHeight="50.0"/>
+                </rowConstraints>
+
+                <StackPane fx:id="targetTopLeft" styleClass="drag-target" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="drag-target-label" text="Rather No"/>
+                </StackPane>
+                <StackPane fx:id="targetTopRight" styleClass="drag-target" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="drag-target-label" text="Rather Yes"/>
+                </StackPane>
+                <StackPane fx:id="targetBottomLeft" styleClass="drag-target" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Label styleClass="drag-target-label" text="No"/>
+                </StackPane>
+                <StackPane fx:id="targetBottomRight" styleClass="drag-target" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <Label styleClass="drag-target-label" text="Yes"/>
+                </StackPane>
+            </GridPane>
+
+        </StackPane>
+    </center>
+
+</BorderPane>

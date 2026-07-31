@@ -56,7 +56,7 @@ public class SceneGroupRepository {
         return dsl.select(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID)
                   .from(CUSTOM_ALBUM_PHOTO)
                   .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(customAlbumId))
-                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.UNASSIGNED.dbValue()))
+                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.UNASSIGNED.getDbValue()))
                   .and(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID.isNotNull())
                   .groupBy(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID)
                   .orderBy(org.jooq.impl.DSL.min(CUSTOM_ALBUM_PHOTO.ADDED_AT))

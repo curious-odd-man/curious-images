@@ -84,7 +84,7 @@ public class CustomAlbumPhoto extends TableImpl<CustomAlbumPhotoRecord> {
     /**
      * The column <code>public.CUSTOM_ALBUM_PHOTO.STATE</code>.
      */
-    public final TableField<CustomAlbumPhotoRecord, Short> STATE = createField(DSL.name("STATE"), SQLDataType.SMALLINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.SMALLINT)), this, "");
+    public final TableField<CustomAlbumPhotoRecord, Integer> STATE = createField(DSL.name("STATE"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>public.CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID</code>.

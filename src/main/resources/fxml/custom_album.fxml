@@ -44,6 +44,8 @@
                     <ToggleButton fx:id="refinedToggle" mnemonicParsing="false" onAction="#onShowRefined"
                                   text="Refined" toggleGroup="$viewToggleGroup"/>
                 </HBox>
+
+                <Button fx:id="triageButton" mnemonicParsing="false" onAction="#onOpenTriage" text="Triage"/>
             </HBox>
             <Label fx:id="lockedHintLabel" managed="false" style="-fx-font-size: 11px; -fx-opacity: 0.7;"
                    text="Refined view is locked until at least one photo is marked Yes." visible="false">

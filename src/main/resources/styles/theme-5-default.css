@@ -376,3 +376,46 @@ FontIcon {
     -fx-padding: 2 6 2 6;
     -fx-background-radius: 8;
 }
+
+/* ---- Triage mode drag targets (TriageController) ----
+   Palette matches the uploaded styles.css this feature's mockups shipped with.
+   TODO: mirror into the other 4 theme-*.css files — default theme only so far. */
+.drag-target {
+    -fx-background-color: rgba(0,0,0,0.03);
+    -fx-border-color: #b5bac1;
+    -fx-border-width: 2;
+    -fx-border-style: segments(6,4);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.drag-target-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #7f8c8d;
+}
+.drag-target-active {
+    -fx-border-style: solid;
+    -fx-border-width: 3;
+}
+.drag-target-active-no          { -fx-background-color: rgba(231,76,60,0.20); -fx-border-color: #e74c3c; }
+.drag-target-active-rather-no   { -fx-background-color: rgba(230,126,34,0.20); -fx-border-color: #e67e22; }
+.drag-target-active-rather-yes  { -fx-background-color: rgba(163,217,119,0.20); -fx-border-color: #a3d977; }
+.drag-target-active-yes         { -fx-background-color: rgba(46,204,113,0.20); -fx-border-color: #2ecc71; }
+.dragging-tile {
+    -fx-opacity: 0.85;
+}
+.triage-header-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+.triage-progress-label {
+    -fx-font-size: 11px;
+    -fx-opacity: 0.7;
+}
+.shortcut-hint-bar {
+    -fx-background-color: rgba(0,0,0,0.03);
+}
+.shortcut-hint-text {
+    -fx-font-size: 11px;
+    -fx-opacity: 0.7;
+}

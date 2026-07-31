@@ -18,9 +18,11 @@ import com.github.curiousoddman.curious_images.ui.controller.custom.GridControll
 import com.github.curiousoddman.curious_images.ui.controller.services.PhotoGridManager;
 import com.github.curiousoddman.curious_images.ui.controller.services.ThumbnailReadyEventListener;
 import com.github.curiousoddman.curious_images.ui.styles.CssClasses;
+import com.github.curiousoddman.curious_images.ui.styles.ThemeManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -33,6 +35,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -99,11 +103,12 @@ public class CustomAlbumController implements Initializable, ThumbnailReadyEvent
     public ScrollPane   unrefinedScrollPane;
     @FXML
     public VBox         unrefinedSectionsBox;
+    @FXML
+    public Button       triageButton;
 
     private GridController gridController;
-
-    private long    currentAlbumId;
-    private boolean refinedLocked = true;
+    private long           currentAlbumId;
+    private boolean        refinedLocked = true;
 
     /**
      * All membership rows for the current album; mutated in place as states change so toggling/refreshing doesn't need a DB round-trip.
@@ -183,6 +188,29 @@ public class CustomAlbumController implements Initializable, ThumbnailReadyEvent
     public void onShowUnrefined() {
         switchToUnrefined();
         renderUnrefined();
+    }
+
+    @FXML
+    public void onOpenTriage() {
+        LoadedFxml<TriageController> loaded     = fxmlLoader.load(FxmlView.TRIAGE, null);
+        TriageController             controller = loaded.controller();
+
+        Stage stage = new Stage();
+        stage.setTitle("Triage — " + albumNameLabel.getText());
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.initOwner(triageButton.getScene()
+                                    .getWindow());
+        Scene scene = new Scene(loaded.parent(), 900, 650);
+        ThemeManager.register(scene);
+        stage.setScene(scene);
+        controller.setStage(stage);
+        controller.init(currentAlbumId);
+        stage.showAndWait();
+        ThemeManager.unregister(scene);
+
+        // Triage may have changed states/Yes-count while this album's panel sat behind the modal
+        // — refresh rather than assume nothing changed.
+        refreshRowsAndRerenderAsync();
     }
 
     private void switchToRefined() {
@@ -427,7 +455,7 @@ public class CustomAlbumController implements Initializable, ThumbnailReadyEvent
                 currentPhotoRows.stream()
                                 .filter(r -> r.getPhotoId() == photoId)
                                 .findFirst()
-                                .ifPresent(r -> r.setState((short) newState.getDbValue()));
+                                .ifPresent(r -> r.setState(newState.getDbValue()));
                 applyBorderClass(photoId, newState);
                 applyLockState();
             });

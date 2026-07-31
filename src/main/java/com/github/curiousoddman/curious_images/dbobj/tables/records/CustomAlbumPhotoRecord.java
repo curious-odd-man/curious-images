@@ -61,15 +61,15 @@ public class CustomAlbumPhotoRecord extends UpdatableRecordImpl<CustomAlbumPhoto
     /**
      * Setter for <code>public.CUSTOM_ALBUM_PHOTO.STATE</code>.
      */
-    public void setState(Short value) {
+    public void setState(Integer value) {
         set(2, value);
     }
 
     /**
      * Getter for <code>public.CUSTOM_ALBUM_PHOTO.STATE</code>.
      */
-    public Short getState() {
-        return (Short) get(2);
+    public Integer getState() {
+        return (Integer) get(2);
     }
 
     /**
@@ -123,7 +123,7 @@ public class CustomAlbumPhotoRecord extends UpdatableRecordImpl<CustomAlbumPhoto
     /**
      * Create a detached, initialised CustomAlbumPhotoRecord
      */
-    public CustomAlbumPhotoRecord(Long customAlbumId, Long photoId, Short state, Long sceneGroupId, LocalDateTime addedAt) {
+    public CustomAlbumPhotoRecord(Long customAlbumId, Long photoId, Integer state, Long sceneGroupId, LocalDateTime addedAt) {
         super(CustomAlbumPhoto.CUSTOM_ALBUM_PHOTO);
 
         setCustomAlbumId(customAlbumId);

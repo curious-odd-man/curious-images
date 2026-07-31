@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.ui.controller.screen.ReScanLibrar
 import com.github.curiousoddman.curious_images.ui.controller.screen.RescanRootsController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.SettingsController;
 import com.github.curiousoddman.curious_images.ui.controller.screen.SlideshowController;
+import com.github.curiousoddman.curious_images.ui.controller.screen.TriageController;
 
 public record FxmlView<T>(String fxmlPath, Class<T> controllerClass) {
     public static final FxmlView<LibraryController>              LIBRARY                 = new FxmlView<>("/fxml/library.fxml", LibraryController.class);
@@ -28,6 +29,7 @@ public record FxmlView<T>(String fxmlPath, Class<T> controllerClass) {
     public static final FxmlView<DuplicatesController>           DUPLICATES              = new FxmlView<>("/fxml/duplicates.fxml", DuplicatesController.class);
     public static final FxmlView<PersonDetailController>         PERSON_DETAIL           = new FxmlView<>("/fxml/person_detail.fxml", PersonDetailController.class);
     public static final FxmlView<CustomAlbumController>          CUSTOM_ALBUM            = new FxmlView<>("/fxml/custom_album.fxml", CustomAlbumController.class);
+    public static final FxmlView<TriageController>               TRIAGE                  = new FxmlView<>("/fxml/triage.fxml", TriageController.class);
     public static final FxmlView<RescanRootsController>          RESCAN_ROOTS            = new FxmlView<>("/fxml/rescan_roots.fxml", RescanRootsController.class);
     public static final FxmlView<AddFilesController>             ADD_FILES               = new FxmlView<>("/fxml/add_files.fxml", AddFilesController.class);
     public static final FxmlView<FacePickerController>           FACE_PICKER             = new FxmlView<>("/fxml/face_picker.fxml", FacePickerController.class);

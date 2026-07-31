@@ -85,14 +85,14 @@ public class CustomAlbumPhotoRepository {
         return dsl.selectFrom(CUSTOM_ALBUM_PHOTO)
                   .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))
                   .and(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID.eq(sceneGroupId))
-                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.UNASSIGNED.dbValue()))
+                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.UNASSIGNED.getDbValue()))
                   .orderBy(CUSTOM_ALBUM_PHOTO.ADDED_AT)
                   .fetch();
     }
 
     public void updateState(long albumId, long photoId, PhotoRefinementState newState) {
         dsl.update(CUSTOM_ALBUM_PHOTO)
-           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.dbValue())
+           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.getDbValue())
            .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))
            .and(CUSTOM_ALBUM_PHOTO.PHOTO_ID.eq(photoId))
            .execute();
@@ -108,7 +108,7 @@ public class CustomAlbumPhotoRepository {
             return;
         }
         dsl.update(CUSTOM_ALBUM_PHOTO)
-           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.dbValue())
+           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.getDbValue())
            .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))
            .and(CUSTOM_ALBUM_PHOTO.PHOTO_ID.in(photoIds))
            .execute();
@@ -124,7 +124,7 @@ public class CustomAlbumPhotoRepository {
         var condition = CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId)
                                                           .and(CUSTOM_ALBUM_PHOTO.SCENE_GROUP_ID.eq(sceneGroupId));
         dsl.update(CUSTOM_ALBUM_PHOTO)
-           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.dbValue())
+           .set(CUSTOM_ALBUM_PHOTO.STATE, newState.getDbValue())
            .where(keepPhotoIds.isEmpty()
                           ? condition
                           : condition.and(CUSTOM_ALBUM_PHOTO.PHOTO_ID.notIn(keepPhotoIds)))
@@ -138,7 +138,7 @@ public class CustomAlbumPhotoRepository {
         return dsl.selectCount()
                   .from(CUSTOM_ALBUM_PHOTO)
                   .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))
-                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.YES.dbValue()))
+                  .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.YES.getDbValue()))
                   .fetchOne(0, int.class);
     }
 
@@ -151,7 +151,7 @@ public class CustomAlbumPhotoRepository {
                 dsl.select(CUSTOM_ALBUM_PHOTO.PHOTO_ID)
                    .from(CUSTOM_ALBUM_PHOTO)
                    .where(CUSTOM_ALBUM_PHOTO.CUSTOM_ALBUM_ID.eq(albumId))
-                   .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.YES.dbValue()))
+                   .and(CUSTOM_ALBUM_PHOTO.STATE.eq(PhotoRefinementState.YES.getDbValue()))
                    .orderBy(CUSTOM_ALBUM_PHOTO.ADDED_AT)
                    .limit(1)
                    .fetchOne(CUSTOM_ALBUM_PHOTO.PHOTO_ID));

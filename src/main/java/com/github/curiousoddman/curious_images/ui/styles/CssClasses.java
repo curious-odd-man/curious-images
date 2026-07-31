@@ -47,6 +47,14 @@ public class CssClasses {
     // theme-5-default.css so far, not the other 4 themes.
     public static final String STATE_BORDER_PREFIX = "state-";
     public static final String STATE_BADGE_PREFIX  = "state-badge-";
-    public static final String PHOTO_TILE           = "custom-album-photo-tile";
-    public static final String PHOTO_TILE_SELECTED  = "custom-album-photo-tile-selected";
+    public static final String PHOTO_TILE          = "custom-album-photo-tile";
+    public static final String PHOTO_TILE_SELECTED = "custom-album-photo-tile-selected";
+
+    // Triage mode drag-and-drop (TriageController, Phase 7) — palette matches the uploaded
+    // styles.css this feature's mockups shipped with. Default theme only so far.
+    public static final String DRAG_TARGET               = "drag-target";
+    public static final String DRAG_TARGET_LABEL         = "drag-target-label";
+    public static final String DRAG_TARGET_ACTIVE        = "drag-target-active";
+    public static final String DRAG_TARGET_ACTIVE_PREFIX = "drag-target-active-";
+    public static final String DRAGGING_TILE             = "dragging-tile";
 }
