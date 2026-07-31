@@ -4,21 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<!--
-    Custom-album panel (album-refinement-feature-spec.md §7). Injected at runtime into
-    LibraryController's contentStack via LibraryViewManager.showCustomAlbum, same pattern as
-    person_detail.fxml.
 
-    Refined view reuses ONE embedded photo_grid.fxml (state=Yes photos only) — same reasoning as
-    before: PhotoGridManager is a singleton PersonDetailController already flags a FIXME about,
-    so this doesn't add more instances of it than that one already does.
-
-    Unrefined view does NOT reuse GridController at all (Phase 6): it's built from scene-group
-    TitledPane sections, each containing plain photo_cell.fxml tiles (GridCellController is
-    @Scope("prototype") and carries no singleton-manager coupling, so many instances of it are
-    safe) wrapped with a state-color border, badge, and 5-state control. See
-    CustomAlbumController for how sections/tiles are built and refreshed.
--->
 <BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
             xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.github.curiousoddman.curious_images.ui.controller.screen.CustomAlbumController">

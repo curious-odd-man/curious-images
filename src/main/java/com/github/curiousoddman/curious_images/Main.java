@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class Main {
     // TODO: engagement features - rank, order and plan - see doc
-    // TODO: Selections/collections/albums whatever - integrate media-shoot-magic here
     // TODO: AI models eviction - no need to store those in memory all the time.
     // TODO: Remove all hardcoded styles --> use classes instead, then update all themes accordingly.
     public static void main(String[] args) {

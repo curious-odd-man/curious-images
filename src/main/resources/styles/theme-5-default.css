@@ -336,10 +336,6 @@ FontIcon {
     -fx-background-color: transparent;
 }
 
-/* ---- Custom-album Refined/Unrefined toggle bar (CustomAlbumController) ----
-   Scoped under .album-view-toggle-bar so this doesn't affect ToggleButtons
-   elsewhere in the app. TODO: mirror this block in the other 4 theme-*.css
-   files — only the default theme has it so far. */
 .album-view-toggle-bar .toggle-button {
     -fx-background-radius: 4;
 }
@@ -348,9 +344,6 @@ FontIcon {
     -fx-text-fill: white;
 }
 
-/* ---- Unrefined-view photo tile state coloring (CustomAlbumController) ----
-   Palette matches the uploaded styles.css this feature's mockups shipped with.
-   TODO: mirror into the other 4 theme-*.css files — default theme only so far. */
 .custom-album-photo-tile {
     -fx-border-width: 3;
     -fx-border-radius: 4;
@@ -377,9 +370,6 @@ FontIcon {
     -fx-background-radius: 8;
 }
 
-/* ---- Triage mode drag targets (TriageController) ----
-   Palette matches the uploaded styles.css this feature's mockups shipped with.
-   TODO: mirror into the other 4 theme-*.css files — default theme only so far. */
 .drag-target {
     -fx-background-color: rgba(0,0,0,0.03);
     -fx-border-color: #b5bac1;
