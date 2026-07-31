@@ -506,3 +506,92 @@ FontIcon {
 .list-cell:filled:selected:focused {
     -fx-background-color: transparent;
 }
+
+/* ---- Custom-album refinement feature (Refined/Unrefined toggle, unrefined-view photo tiles,
+   triage mode drag targets) — album-refinement-feature-spec.md.
+
+   DELIBERATELY NOT the red->green hue progression every other theme uses: this theme's whole
+   premise is grayscale + a restrained accent used sparingly, and five saturated status colors
+   would fight that directly. Instead, state is a monochrome tint ramp (lightest = No, darkest =
+   Yes) with the theme's actual -accent reserved for Yes alone — the one state worth visually
+   calling out — and relies on the tile's own short text label ("No"/"R-"/"-"/"R+"/"Yes", set in
+   CustomAlbumController/TriageController Java code, not here) to disambiguate the middle of the
+   ramp rather than hue. ---- */
+.album-view-toggle-bar .toggle-button {
+    -fx-background-radius: 4;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+}
+.album-view-toggle-bar .toggle-button:selected {
+    -fx-background-color: -accent;
+    -fx-text-fill: white;
+}
+
+.custom-album-photo-tile {
+    -fx-border-width: 3;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-background-color: -bg-elevated;
+}
+.custom-album-photo-tile-selected {
+    -fx-effect: dropshadow(gaussian, -accent, 8, 0.6, 0, 0);
+}
+.state-no          { -fx-border-color: -border-subtle; }
+.state-rather-no   { -fx-border-color: #b5b5b5; }
+.state-unassigned  { -fx-border-color: -text-secondary; }
+.state-rather-yes  { -fx-border-color: #4a4a4a; }
+.state-yes         { -fx-border-color: -accent; }
+
+.state-badge-no          { -fx-background-color: -border-subtle;  -fx-text-fill: -text-primary; }
+.state-badge-rather-no   { -fx-background-color: #b5b5b5;         -fx-text-fill: -text-primary; }
+.state-badge-unassigned  { -fx-background-color: -text-secondary; -fx-text-fill: white; }
+.state-badge-rather-yes  { -fx-background-color: #4a4a4a;         -fx-text-fill: white; }
+.state-badge-yes         { -fx-background-color: -accent;         -fx-text-fill: white; }
+.state-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+}
+
+.drag-target {
+    -fx-background-color: -bg-hover;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 2;
+    -fx-border-style: segments(6,4);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.drag-target-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-secondary;
+}
+.drag-target-active {
+    -fx-border-style: solid;
+    -fx-border-width: 3;
+}
+/* Same monochrome-ramp reasoning as the tile borders above: intensity, not hue. */
+.drag-target-active-no          { -fx-background-color: derive(-border-subtle, -10%); -fx-border-color: -border-subtle; }
+.drag-target-active-rather-no   { -fx-background-color: derive(#b5b5b5, -10%);        -fx-border-color: #b5b5b5; }
+.drag-target-active-rather-yes  { -fx-background-color: derive(#4a4a4a, 60%);          -fx-border-color: #4a4a4a; }
+.drag-target-active-yes         { -fx-background-color: derive(-accent, 70%);          -fx-border-color: -accent; }
+.dragging-tile {
+    -fx-opacity: 0.85;
+}
+.triage-header-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+.triage-progress-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-secondary;
+}
+.shortcut-hint-bar {
+    -fx-background-color: -bg-hover;
+}
+.shortcut-hint-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-secondary;
+}

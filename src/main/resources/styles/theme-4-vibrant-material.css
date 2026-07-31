@@ -510,3 +510,85 @@ FontIcon {
 .list-cell:filled:selected:focused {
     -fx-background-color: transparent;
 }
+
+/* ---- Custom-album refinement feature (Refined/Unrefined toggle, unrefined-view photo tiles,
+   triage mode drag targets) — album-refinement-feature-spec.md. Same red->green semantic
+   progression as every other theme, pushed toward bold Material-style status colors to match
+   this theme's saturated palette. ---- */
+.album-view-toggle-bar .toggle-button {
+    -fx-background-radius: 20;
+    -fx-background-color: -bg-elevated;
+    -fx-text-fill: -text-primary;
+}
+.album-view-toggle-bar .toggle-button:selected {
+    -fx-background-color: -accent;
+    -fx-text-fill: white;
+}
+
+.custom-album-photo-tile {
+    -fx-border-width: 3;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: -bg-elevated;
+}
+.custom-album-photo-tile-selected {
+    -fx-effect: dropshadow(gaussian, -accent, 10, 0.65, 0, 0);
+}
+.state-no          { -fx-border-color: -danger; }
+.state-rather-no   { -fx-border-color: #f59e0b; }
+.state-unassigned  { -fx-border-color: -text-secondary; }
+.state-rather-yes  { -fx-border-color: #84cc16; }
+.state-yes         { -fx-border-color: #22c55e; }
+
+.state-badge-no          { -fx-background-color: -danger; -fx-text-fill: white; }
+.state-badge-rather-no   { -fx-background-color: #f59e0b; -fx-text-fill: white; }
+.state-badge-unassigned  { -fx-background-color: -text-secondary; -fx-text-fill: white; }
+.state-badge-rather-yes  { -fx-background-color: #84cc16; -fx-text-fill: white; }
+.state-badge-yes         { -fx-background-color: #22c55e; -fx-text-fill: white; }
+.state-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+}
+
+.drag-target {
+    -fx-background-color: -bg-hover;
+    -fx-border-color: -border-subtle;
+    -fx-border-width: 2;
+    -fx-border-style: segments(6,4);
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+}
+.drag-target-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-secondary;
+}
+.drag-target-active {
+    -fx-border-style: solid;
+    -fx-border-width: 3;
+}
+.drag-target-active-no          { -fx-background-color: derive(-danger, 80%); -fx-border-color: -danger; }
+.drag-target-active-rather-no   { -fx-background-color: derive(#f59e0b, 80%); -fx-border-color: #f59e0b; }
+.drag-target-active-rather-yes  { -fx-background-color: derive(#84cc16, 80%); -fx-border-color: #84cc16; }
+.drag-target-active-yes         { -fx-background-color: derive(#22c55e, 80%); -fx-border-color: #22c55e; }
+.dragging-tile {
+    -fx-opacity: 0.85;
+}
+.triage-header-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-primary;
+}
+.triage-progress-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-secondary;
+}
+.shortcut-hint-bar {
+    -fx-background-color: -bg-hover;
+}
+.shortcut-hint-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-secondary;
+}
