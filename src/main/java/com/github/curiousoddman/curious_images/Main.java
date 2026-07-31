@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class Main {
     // TODO: engagement features - rank, order and plan - see doc
-    // TODO: AI models eviction - no need to store those in memory all the time.
     // TODO: Remove all hardcoded styles --> use classes instead, then update all themes accordingly.
+    // TODO: global refactoring - I need to reevaluate location of each file in app. especially those about ui controllers.
     public static void main(String[] args) {
         LauncherImpl.launchApplication(JavafxApplication.class, AnimatedPreloader.class, args);
     }

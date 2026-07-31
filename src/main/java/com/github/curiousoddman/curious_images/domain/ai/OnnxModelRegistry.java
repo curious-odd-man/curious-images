@@ -14,14 +14,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Singleton registry for ONNX Runtime sessions. Sessions are expensive to create; load each
- * model once and reuse across all inference calls. Models are loaded lazily on first use so the
- * application starts even when model files have not been downloaded yet.
- * <p>
- * The {@link #evict(String)} method lets callers drop rarely-used sessions (e.g. the CLIP text
- * encoder between searches) to reclaim RAM; they will be reloaded transparently on next access.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -31,10 +23,6 @@ public class OnnxModelRegistry implements DisposableBean {
     private final ConcurrentHashMap<String, OrtSession> sessions = new ConcurrentHashMap<>();
     private final AiConfig                              config;
 
-    /**
-     * Returns the cached session for {@code modelKey}, loading it from {@code modelPath} if this
-     * is the first call for that key. Thread-safe via {@link ConcurrentHashMap#computeIfAbsent}.
-     */
     public OrtSession getOrLoad(String modelKey, Path modelPath, List<String> expectedOutputNames) throws IrrecoverableIterationException {
         OrtSession ortSession = sessions.get(modelKey);
         if (ortSession != null) {
@@ -68,11 +56,6 @@ public class OnnxModelRegistry implements DisposableBean {
         }
     }
 
-    /**
-     * Evicts the session for {@code modelKey} from the cache and closes it, freeing native
-     * memory. A subsequent call to {@link #getOrLoad} will reload it from disk.
-     * No-op if the key is not currently loaded.
-     */
     public void evict(String modelKey) {
         OrtSession removed = sessions.remove(modelKey);
         if (removed != null) {
@@ -85,12 +68,6 @@ public class OnnxModelRegistry implements DisposableBean {
         }
     }
 
-    /**
-     * Evicts and closes every currently-loaded session, without closing the shared
-     * {@link OrtEnvironment}. Used when a setting that affects session creation (execution
-     * provider, intra-op thread count) changes at runtime: the next {@link #getOrLoad} call for
-     * each model will transparently recreate its session with the new {@link AiConfig} values.
-     */
     public void evictAll() {
         sessions.keySet()
                 .forEach(this::evict);

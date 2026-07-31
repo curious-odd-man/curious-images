@@ -78,6 +78,7 @@ public class AiPipelineJob extends BackgroundJob {
     private final Duration                 videoFrameSampleInterval;
     private final ClipTextEncoder          clipTextEncoder;
     private final PhotoTagRepository       tagRepository;
+    private final OnnxModelRegistry        onnxModelRegistry;
 
     @Override
     public void runImpl() throws Exception {
@@ -111,6 +112,8 @@ public class AiPipelineJob extends BackgroundJob {
             log.error("AI pipeline failed", e);
             publishFailed(e);
             throw e;
+        } finally {
+            onnxModelRegistry.evictAll();
         }
     }
 

@@ -29,11 +29,6 @@ public class ClipTextEncoder {
     private final ModelPaths        paths;
     private final ClipTokenizer     tokenizer;
 
-    /**
-     * Encodes a free-text query into a 512-dim L2-normalised CLIP embedding.
-     * The text encoder session is loaded lazily on first call and may be evicted via
-     * {@link OnnxModelRegistry#evict(String)} between searches.
-     */
     public float[] encode(String text) throws OrtException, IrrecoverableIterationException {
         OrtSession session = registry.getOrLoad("clip_text", paths.clipText(), List.of("embedding"));
         int[][]   tokens  = tokenizer.tokenize(text);

@@ -36,6 +36,7 @@ public class SearchService {
     private final PersonRepository        personRepo;
     private final PhotoTagRepository      photoTagRepo;
 
+    // FIXME: Unused methods
     /**
      * Encodes {@code query} with the CLIP text encoder and returns up to {@code topK} media
      * IDs ordered by descending cosine similarity.
