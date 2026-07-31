@@ -347,3 +347,32 @@ FontIcon {
     -fx-background-color: #2f7dd1;
     -fx-text-fill: white;
 }
+
+/* ---- Unrefined-view photo tile state coloring (CustomAlbumController) ----
+   Palette matches the uploaded styles.css this feature's mockups shipped with.
+   TODO: mirror into the other 4 theme-*.css files — default theme only so far. */
+.custom-album-photo-tile {
+    -fx-border-width: 3;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.custom-album-photo-tile-selected {
+    -fx-effect: dropshadow(gaussian, #2f7dd1, 8, 0.6, 0, 0);
+}
+.state-no          { -fx-border-color: #e74c3c; }
+.state-rather-no   { -fx-border-color: #e67e22; }
+.state-unassigned  { -fx-border-color: #7f8c8d; }
+.state-rather-yes  { -fx-border-color: #a3d977; }
+.state-yes         { -fx-border-color: #2ecc71; }
+
+.state-badge-no          { -fx-background-color: #e74c3c; -fx-text-fill: white; }
+.state-badge-rather-no   { -fx-background-color: #e67e22; -fx-text-fill: white; }
+.state-badge-unassigned  { -fx-background-color: #7f8c8d; -fx-text-fill: white; }
+.state-badge-rather-yes  { -fx-background-color: #a3d977; -fx-text-fill: white; }
+.state-badge-yes         { -fx-background-color: #2ecc71; -fx-text-fill: white; }
+.state-badge {
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 8;
+}

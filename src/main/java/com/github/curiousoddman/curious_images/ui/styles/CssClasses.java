@@ -40,4 +40,13 @@ public class CssClasses {
     // Custom-album Refined/Unrefined toggle bar wrapper (CustomAlbumController) — see
     // theme-5-default.css's ".album-view-toggle-bar" block; not yet mirrored in the other themes.
     public static final String ALBUM_VIEW_TOGGLE_BAR = "album-view-toggle-bar";
+
+    // Unrefined-view photo tile state border/badge (CustomAlbumController) — suffix comes from
+    // PhotoRefinementState#cssSuffix(), e.g. "state-yes", "state-badge-rather-no". Palette
+    // mirrors the uploaded styles.css this feature's mockups shipped with; only mirrored into
+    // theme-5-default.css so far, not the other 4 themes.
+    public static final String STATE_BORDER_PREFIX = "state-";
+    public static final String STATE_BADGE_PREFIX  = "state-badge-";
+    public static final String PHOTO_TILE           = "custom-album-photo-tile";
+    public static final String PHOTO_TILE_SELECTED  = "custom-album-photo-tile-selected";
 }

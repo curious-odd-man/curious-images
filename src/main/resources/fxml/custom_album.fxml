@@ -9,14 +9,15 @@
     LibraryController's contentStack via LibraryViewManager.showCustomAlbum, same pattern as
     person_detail.fxml.
 
-    Deliberately ONE embedded photo_grid.fxml, re-populated with a different photo set when the
-    Refined/Unrefined toggle changes, rather than one grid per view (or, worse, one per scene
-    group). PersonDetailController already flags a FIXME that PhotoGridManager is a singleton
-    shared across every embedded GridController instance ("one manager cannot manage 2
-    controllers simultaneously") — adding N more instances here (one per scene group) would make
-    that existing, already-acknowledged problem worse, not better. See the implementation plan
-    for how scene-group sectioning + per-tile state coloring (both deferred out of this shell)
-    are planned to avoid it: bespoke lightweight tiles, not more embedded GridControllers.
+    Refined view reuses ONE embedded photo_grid.fxml (state=Yes photos only) — same reasoning as
+    before: PhotoGridManager is a singleton PersonDetailController already flags a FIXME about,
+    so this doesn't add more instances of it than that one already does.
+
+    Unrefined view does NOT reuse GridController at all (Phase 6): it's built from scene-group
+    TitledPane sections, each containing plain photo_cell.fxml tiles (GridCellController is
+    @Scope("prototype") and carries no singleton-manager coupling, so many instances of it are
+    safe) wrapped with a state-color border, badge, and 5-state control. See
+    CustomAlbumController for how sections/tiles are built and refreshed.
 -->
 <BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
             xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
@@ -54,8 +55,23 @@
     </top>
 
     <center>
-        <BorderPane fx:id="gridBorderPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
-                    BorderPane.alignment="CENTER"/>
+        <StackPane BorderPane.alignment="CENTER">
+
+            <BorderPane fx:id="refinedGridBorderPane" maxHeight="1.7976931348623157E308"
+                        maxWidth="1.7976931348623157E308" visible="false" managed="false"/>
+
+            <ScrollPane fx:id="unrefinedScrollPane" fitToWidth="true" maxHeight="1.7976931348623157E308"
+                        maxWidth="1.7976931348623157E308">
+                <content>
+                    <VBox fx:id="unrefinedSectionsBox" spacing="14.0">
+                        <padding>
+                            <Insets bottom="12.0" left="12.0" right="12.0" top="12.0"/>
+                        </padding>
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+        </StackPane>
     </center>
 
 </BorderPane>
