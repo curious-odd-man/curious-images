@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
+import com.github.curiousoddman.curious_images.dbobj.tables.KeyboardShortcut;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
@@ -49,6 +50,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.records.FolderRecord
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobFileIssueRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportJobStatsRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.ImportRootRecord;
+import com.github.curiousoddman.curious_images.dbobj.tables.records.KeyboardShortcutRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaHashRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaMetadataEditRecord;
 import com.github.curiousoddman.curious_images.dbobj.tables.records.MediaRecord;
@@ -112,6 +114,7 @@ public class Keys {
     public static final UniqueKey<ImportJobStatsRecord> CONSTRAINT_B6F = Internal.createUniqueKey(ImportJobStats.IMPORT_JOB_STATS, DSL.name("CONSTRAINT_B6F"), new TableField[] { ImportJobStats.IMPORT_JOB_STATS.ID }, true);
     public static final UniqueKey<ImportRootRecord> CONSTRAINT_D = Internal.createUniqueKey(ImportRoot.IMPORT_ROOT, DSL.name("CONSTRAINT_D"), new TableField[] { ImportRoot.IMPORT_ROOT.ID }, true);
     public static final UniqueKey<ImportRootRecord> CONSTRAINT_D9 = Internal.createUniqueKey(ImportRoot.IMPORT_ROOT, DSL.name("CONSTRAINT_D9"), new TableField[] { ImportRoot.IMPORT_ROOT.PATH }, true);
+    public static final UniqueKey<KeyboardShortcutRecord> CONSTRAINT_29 = Internal.createUniqueKey(KeyboardShortcut.KEYBOARD_SHORTCUT, DSL.name("CONSTRAINT_29"), new TableField[] { KeyboardShortcut.KEYBOARD_SHORTCUT.ACTION_ID }, true);
     public static final UniqueKey<MediaRecord> CONSTRAINT_4 = Internal.createUniqueKey(Media.MEDIA, DSL.name("CONSTRAINT_4"), new TableField[] { Media.MEDIA.ID }, true);
     public static final UniqueKey<MediaRecord> CONSTRAINT_45D = Internal.createUniqueKey(Media.MEDIA, DSL.name("CONSTRAINT_45D"), new TableField[] { Media.MEDIA.ABSOLUTE_PATH }, true);
     public static final UniqueKey<MediaHashRecord> CONSTRAINT_9 = Internal.createUniqueKey(MediaHash.MEDIA_HASH, DSL.name("CONSTRAINT_9"), new TableField[] { MediaHash.MEDIA_HASH.MEDIA_ID }, true);

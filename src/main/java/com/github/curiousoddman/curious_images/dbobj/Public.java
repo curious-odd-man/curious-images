@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
+import com.github.curiousoddman.curious_images.dbobj.tables.KeyboardShortcut;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
@@ -148,6 +149,11 @@ public class Public extends SchemaImpl {
     public final ImportRoot IMPORT_ROOT = ImportRoot.IMPORT_ROOT;
 
     /**
+     * The table <code>public.KEYBOARD_SHORTCUT</code>.
+     */
+    public final KeyboardShortcut KEYBOARD_SHORTCUT = KeyboardShortcut.KEYBOARD_SHORTCUT;
+
+    /**
      * The table <code>public.MEDIA</code>.
      */
     public final Media MEDIA = Media.MEDIA;
@@ -254,6 +260,7 @@ public class Public extends SchemaImpl {
             ImportJobFileIssue.IMPORT_JOB_FILE_ISSUE,
             ImportJobStats.IMPORT_JOB_STATS,
             ImportRoot.IMPORT_ROOT,
+            KeyboardShortcut.KEYBOARD_SHORTCUT,
             Media.MEDIA,
             MediaHash.MEDIA_HASH,
             MediaMetadataEdit.MEDIA_METADATA_EDIT,

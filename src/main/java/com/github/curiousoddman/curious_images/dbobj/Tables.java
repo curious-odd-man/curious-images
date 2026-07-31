@@ -20,6 +20,7 @@ import com.github.curiousoddman.curious_images.dbobj.tables.Folder;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobFileIssue;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportJobStats;
 import com.github.curiousoddman.curious_images.dbobj.tables.ImportRoot;
+import com.github.curiousoddman.curious_images.dbobj.tables.KeyboardShortcut;
 import com.github.curiousoddman.curious_images.dbobj.tables.Media;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaHash;
 import com.github.curiousoddman.curious_images.dbobj.tables.MediaMetadataEdit;
@@ -132,6 +133,11 @@ public class Tables {
      * The table <code>public.IMPORT_ROOT</code>.
      */
     public static final ImportRoot IMPORT_ROOT = ImportRoot.IMPORT_ROOT;
+
+    /**
+     * The table <code>public.KEYBOARD_SHORTCUT</code>.
+     */
+    public static final KeyboardShortcut KEYBOARD_SHORTCUT = KeyboardShortcut.KEYBOARD_SHORTCUT;
 
     /**
      * The table <code>public.MEDIA</code>.
